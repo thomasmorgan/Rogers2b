@@ -5,8 +5,11 @@ from wallace.experiments import Experiment
 from wallace.sources import Source
 import json
 from wallace.information import Gene, Meme
+from wallace.models import Info
 from wallace.networks import Network
 import math
+import random
+from sqlalchemy import desc
 
 
 class Rogers(Experiment):
@@ -51,7 +54,7 @@ class Rogers(Experiment):
             self.recruiter().close_recruitment()
         else:
             # Otherwise recruit a new participant.
-            self.recruiter().recruit_new_participants(self, n=num_agents_per_generation)
+            self.recruiter().recruit_new_participants(self, n=self.num_agents_per_generation)
 
     def is_experiment_over(self):
         return len(self.network.agents) == self.num_agents
@@ -68,20 +71,20 @@ class RogersSource(Source):
         return {"learner": "asocial"}
         #return json.dumps(data)
 
-
     def transmit(self, other_node):
         info = Gene(
             origin=self,
             origin_uuid=self.uuid,
             contents=self._data())
 
-        super(Source,self).transmit(info,other_node)
+        super(Source, self).transmit(info, other_node)
+
 
 class RogersNetwork(Network):
-    """In a Rogers Network agents are arranged into genenerations of a set size and each agent
-    is connected to all agents in the previous generation (the first generation agents are
-    connected to a source)
-    """ 
+    """In a Rogers Network agents are arranged into genenerations of a set size
+    and each agent is connected to all agents in the previous generation (the
+    first generation agents are connected to a source)
+    """
 
     def __init__(self, agent_type, db, agents_per_generation=10, num_generations=10):
         self.db = db
@@ -124,36 +127,37 @@ class RogersNetwork(Network):
             newcomer_generation = math.floor(((len(self.agents)-1)*1.0)/self.agents_per_generation)
             min_previous_generation = (newcomer_generation-1)*self.agents_per_generation
             previous_generation_agents = self.db.query(Agent)\
-            .filter(Agent.status != "failed")\
-            .order_by(Agent.creation_time)[min_previous_generation:(min_previous_generation+self.agents_per_generation)]    
-            
+                .filter(Agent.status != "failed")\
+                .order_by(Agent.creation_time)[min_previous_generation:(min_previous_generation+self.agents_per_generation)]
+
             for a in previous_generation_agents:
                 a.connect_to(newcomer)
             self.db.commit()
 
         return newcomer
 
-    def agents_of_generation(generation):
+    def agents_of_generation(self, generation):
         first_index = generation*self.agents_per_generation
-        last_index = first_index+(agents_per_generation-1)
+        last_index = first_index+(self.agents_per_generation-1)
         return self.agents[first_index:last_index]
 
 
 class RogersNetworkProcess(Process):
 
     def __init__(self, network):
+        self.network = network
         super(RogersNetworkProcess, self).__init__(network)
 
     def step(self, verbose=True):
 
         newcomer = self.network.last_agent
-        current_generation = floor((len(self.network.agents)*1.0-1)/self.network.agents_per_generation)
+        current_generation = math.floor((len(self.network.agents)*1.0-1)/self.network.agents_per_generation)
 
-        if (current_generation==0):
+        if (current_generation == 0):
             self.network.sources[0].transmit(self.network.agents[len(self.network.agents)])
         else:
             parent = None
-            potential_parents = agents_of_generation(current_generation-1)
+            potential_parents = self.network.agents_of_generation(current_generation-1)
             potential_parent_fitnesses = [p.fitness() for p in potential_parents]
             potential_parent_probabilities = [(f/(1.0*sum(potential_parent_fitnesses))) for f in potential_parent_fitnesses]
             rnd = random.random()
@@ -168,11 +172,11 @@ class RogersNetworkProcess(Process):
             gene = newcomer.latest_information_received(info_type=Gene)
 
             if (gene.contents["learner"] == "social"):
-                rnd = random.randint(0,(self.network.agents_per_generation-1))
+                rnd = random.randint(0, (self.network.agents_per_generation-1))
                 cultural_parent = potential_parents[rnd]
-                cultural_parent.transmit(newcomer,info_type=Meme)
+                cultural_parent.transmit(newcomer, info_type=Meme)
                 newcomer.receive_all()
-            else if (gene.contents["learner"] == "asocial"):
+            elif (gene.contents["learner"] == "asocial"):
                 pass
             else:
                 raise AssertionError("Learner gene set to non-coherent value")
@@ -180,7 +184,7 @@ class RogersNetworkProcess(Process):
 
 class RogersAgent(Agent):
 
-     __mapper_args__ = {"polymorphic_identity": "rogers_agent"}
+    __mapper_args__ = {"polymorphic_identity": "rogers_agent"}
 
     def transmit(self, other_node, info_type=Info):
         info = info_type\
@@ -189,11 +193,7 @@ class RogersAgent(Agent):
             .order_by(desc(info_type.creation_time))\
             .first()
 
-        super(Source,self).transmit(info,other_node)
+        super(Source, self).transmit(info, other_node)
 
     def update(self, info):
         info.copy_to(self)
-
-
-
-

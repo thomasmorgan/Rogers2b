@@ -34,7 +34,6 @@ class TestNetworks(object):
 
         assert len(net.vectors) == 30
 
-
     def test_create_rogers_network_large(self):
         net = RogersNetwork(agents.ReplicatorAgent, self.db, agents_per_generation=100)
 
