@@ -166,15 +166,15 @@ class RogersNetworkProcess(Process):
                 temp += probability
                 if rnd < temp:
                     parent = potential_parents[i]
-            parent.transmit(newcomer, info_type=Gene)
+            parent.transmit(newcomer, selector=Gene)
             newcomer.receive_all()
 
-            gene = newcomer.latest_information_received(info_type=Gene)
+            gene = newcomer.latest_information_received(selector=Gene)
 
             if (gene.contents["learner"] == "social"):
                 rnd = random.randint(0, (self.network.agents_per_generation-1))
                 cultural_parent = potential_parents[rnd]
-                cultural_parent.transmit(newcomer, info_type=Meme)
+                cultural_parent.transmit(newcomer, selector=Meme)
                 newcomer.receive_all()
             elif (gene.contents["learner"] == "asocial"):
                 pass
@@ -185,15 +185,6 @@ class RogersNetworkProcess(Process):
 class RogersAgent(Agent):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_agent"}
-
-    def transmit(self, other_node, info_type=Info):
-        info = info_type\
-            .query\
-            .filter_by(origin_uuid=self.uuid)\
-            .order_by(desc(info_type.creation_time))\
-            .first()
-
-        super(Source, self).transmit(info, other_node)
 
     def update(self, info):
         info.copy_to(self)
