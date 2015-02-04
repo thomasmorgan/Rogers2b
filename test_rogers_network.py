@@ -1,5 +1,5 @@
 from wallace import networks, agents, db, sources
-from experiment import RogersNetwork
+from experiment import RogersNetwork, RogersNetworkProcess, RogersSource, RogersAgent
 
 
 class TestNetworks(object):
@@ -35,22 +35,18 @@ class TestNetworks(object):
         assert len(net.vectors) == 30
 
     def test_rogers_network_process(self):
-        net = RogersNetwork(agents.ReplicatorAgent, self.db, agents_per_generation=3)
 
-        newcomers = []
+        # Create the network and process.
+        net = RogersNetwork(RogersAgent, self.db,
+                            agents_per_generation=3)
+        process = RogersNetworkProcess(net)
+
+        # Add a source.
+        source = RogersSource()
+        net.add_source_global(source)
+        print "Added initial source: " + str(source)
+
         for i in range(12):
-            agent = agents.ReplicatorAgent()
-            newcomers.append(agent)
+            agent = RogersAgent()
             net.add_agent(agent)
-
-    # def test_create_rogers_network_large(self):
-    #     net = RogersNetwork(agents.ReplicatorAgent, self.db, agents_per_generation=100)
-
-    #     newcomers = []
-    #     for i in range(400):
-    #         agent = agents.ReplicatorAgent()
-    #         newcomers.append(agent)
-    #         net.add_agent(agent)
-    #         print i
-
-    #     print len(net.vectors)
+            process.step()

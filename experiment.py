@@ -3,7 +3,6 @@ from wallace.recruiters import PsiTurkRecruiter
 from wallace.agents import ReplicatorAgent, Agent
 from wallace.experiments import Experiment
 from wallace.sources import Source
-import json
 from wallace.information import Gene, Meme
 from wallace.models import Info
 from wallace.networks import Network
@@ -68,16 +67,15 @@ class RogersSource(Source):
 
     @staticmethod
     def _data():
-        return {"learner": "asocial"}
-        #return json.dumps(data)
+        return "asocial"
 
-    def transmit(self, other_node):
+    def _selector(self):
         info = Gene(
             origin=self,
             origin_uuid=self.uuid,
             contents=self._data())
 
-        super(Source, self).transmit(info, other_node)
+        return [info]
 
 
 class RogersNetwork(Network):
@@ -151,10 +149,11 @@ class RogersNetworkProcess(Process):
     def step(self, verbose=True):
 
         newcomer = self.network.last_agent
-        current_generation = math.floor((len(self.network.agents)*1.0-1)/self.network.agents_per_generation)
+        current_generation = int(math.floor((len(self.network.agents)*1.0-1)/self.network.agents_per_generation))
 
         if (current_generation == 0):
-            self.network.sources[0].transmit(self.network.agents[len(self.network.agents)])
+            self.network.sources[0].transmit(self.network.agents[len(self.network.agents)-1], selector=Gene)
+            newcomer.receive_all()
         else:
             parent = None
             potential_parents = self.network.agents_of_generation(current_generation-1)
@@ -169,14 +168,15 @@ class RogersNetworkProcess(Process):
             parent.transmit(newcomer, selector=Gene)
             newcomer.receive_all()
 
-            gene = newcomer.latest_information_received(selector=Gene)
-
-            if (gene.contents["learner"] == "social"):
+            if (newcomer.gene.contents == "social"):
                 rnd = random.randint(0, (self.network.agents_per_generation-1))
+                print self.network.agents_per_generation-1
+                print potential_parents
+                print rnd
                 cultural_parent = potential_parents[rnd]
                 cultural_parent.transmit(newcomer, selector=Meme)
                 newcomer.receive_all()
-            elif (gene.contents["learner"] == "asocial"):
+            elif (newcomer.gene.contents == "asocial"):
                 pass
             else:
                 raise AssertionError("Learner gene set to non-coherent value")
@@ -186,5 +186,37 @@ class RogersAgent(Agent):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_agent"}
 
+    def fitness(self):
+        return 1
+
+    @property
+    def mutation_rate(self):
+        return 0.5
+
+    @property
+    def gene(self):
+        gene = Gene\
+            .query\
+            .filter_by(origin_uuid=self.uuid)\
+            .order_by(desc(Info.creation_time))\
+            .first()
+        return gene
+
+    @property
+    def meme(self):
+        meme = Meme\
+            .query\
+            .filter_by(origin_uuid=self.uuid)\
+            .order_by(desc(Info.creation_time))\
+            .first()
+        return meme
+
     def update(self, info):
+
         info.copy_to(self)
+
+        # Mutate.
+        if random.random() < self.mutation_rate:
+            print "mutate!"
+            all_strategies = ["social", "asocial"]
+            self.gene.contents = all_strategies[not all_strategies.index(self.gene.contents)]
