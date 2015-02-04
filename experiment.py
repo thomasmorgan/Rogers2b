@@ -11,6 +11,14 @@ import random
 from sqlalchemy import desc
 
 
+class LearningGene(Gene):
+    __mapper_args__ = {"polymorphic_identity": "gene_learning"}
+
+
+class MutationGene(Gene):
+    __mapper_args__ = {"polymorphic_identity": "gene_mutation"}
+
+
 class Rogers(Experiment):
     def __init__(self, session):
         super(Rogers, self).__init__(session)
@@ -28,7 +36,6 @@ class Rogers(Experiment):
         if not self.network.sources:
             source = RogersSource()
             self.network.add_source_global(source)
-            print "Added initial source: " + str(source)
 
     def newcomer_arrival_trigger(self, newcomer):
 
@@ -118,6 +125,7 @@ class RogersNetwork(Network):
         self.db.add(newcomer)
         self.db.commit()
 
+        # Place them in the network.
         if len(self.agents) <= self.agents_per_generation:
             self.sources[0].connect_to(newcomer)
             self.db.commit()
@@ -136,7 +144,7 @@ class RogersNetwork(Network):
 
     def agents_of_generation(self, generation):
         first_index = generation*self.agents_per_generation
-        last_index = first_index+(self.agents_per_generation-1)
+        last_index = first_index+(self.agents_per_generation)
         return self.agents[first_index:last_index]
 
 
@@ -170,9 +178,6 @@ class RogersNetworkProcess(Process):
 
             if (newcomer.gene.contents == "social"):
                 rnd = random.randint(0, (self.network.agents_per_generation-1))
-                print self.network.agents_per_generation-1
-                print potential_parents
-                print rnd
                 cultural_parent = potential_parents[rnd]
                 cultural_parent.transmit(newcomer, selector=Meme)
                 newcomer.receive_all()
@@ -191,7 +196,8 @@ class RogersAgent(Agent):
 
     @property
     def mutation_rate(self):
-        return 0.5
+        gene = MutationGene.query.first()
+        return gene.contents
 
     @property
     def gene(self):
@@ -217,6 +223,5 @@ class RogersAgent(Agent):
 
         # Mutate.
         if random.random() < self.mutation_rate:
-            print "mutate!"
             all_strategies = ["social", "asocial"]
             self.gene.contents = all_strategies[not all_strategies.index(self.gene.contents)]

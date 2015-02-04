@@ -36,17 +36,21 @@ class TestNetworks(object):
 
     def test_rogers_network_process(self):
 
+        n = 20
+        apg = 2
+
         # Create the network and process.
         net = RogersNetwork(RogersAgent, self.db,
-                            agents_per_generation=3)
+                            agents_per_generation=apg)
         process = RogersNetworkProcess(net)
 
         # Add a source.
         source = RogersSource()
         net.add_source_global(source)
-        print "Added initial source: " + str(source)
 
-        for i in range(12):
+        for i in range(n):
             agent = RogersAgent()
             net.add_agent(agent)
             process.step()
+
+        # print 1.0*sum([a.gene.contents == "social" for a in net.agents][n-apg:])/apg
