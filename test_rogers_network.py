@@ -34,14 +34,14 @@ class TestNetworks(object):
 
         assert len(net.vectors) == 30
 
-    # def test_rogers_network_process(self):
-    #     net = RogersNetwork(agents.ReplicatorAgent, self.db, agents_per_generation=3)
+    def test_rogers_network_process(self):
+        net = RogersNetwork(agents.ReplicatorAgent, self.db, agents_per_generation=3)
 
-    #     newcomers = []
-    #     for i in range(12):
-    #         agent = agents.ReplicatorAgent()
-    #         newcomers.append(agent)
-    #         net.add_agent(agent)
+        newcomers = []
+        for i in range(12):
+            agent = agents.ReplicatorAgent()
+            newcomers.append(agent)
+            net.add_agent(agent)
 
     # def test_create_rogers_network_large(self):
     #     net = RogersNetwork(agents.ReplicatorAgent, self.db, agents_per_generation=100)
