@@ -186,8 +186,12 @@ class RogersNetworkProcess(Process):
         current_generation = int(math.floor((len(self.network.agents)*1.0-1)/self.network.agents_per_generation))
 
         if (current_generation == 0):
-            self.network.sources[0].transmit(self.network.agents[len(self.network.agents)-1], selector=Gene)
+            """ this line nolonger needs to specify a info_type """
+            """ note, we can use an idex of -1 to specify the most recent agent! """
+            self.network.sources[0].transmit(self.network.agents[-1])
             newcomer.receive_all()
+            """ this method added to enable mutation after the first generation """
+            newcomer.set_mutation(0.5)
         else:
             parent = None
             potential_parents = self.network.agents_of_generation(current_generation-1)
@@ -201,6 +205,7 @@ class RogersNetworkProcess(Process):
                     parent = potential_parents[i]
             parent.transmit(newcomer, selector=Gene)
             newcomer.receive_all()
+            
 
             if (newcomer.gene.contents == "social"):
                 rnd = random.randint(0, (self.network.agents_per_generation-1))
@@ -221,13 +226,17 @@ class RogersAgent(Agent):
         return 1
 
     @property
-    def mutation_rate(self):
-        gene = MutationGene.query.first()
-        return gene.contents
+    def mutation_gene(self):
+        gene = MutationGene\
+            .query\
+            .filter_by(origin_uuid=self.uuid)\
+            .order_by(desc(Info.creation_time))\
+            .first()
+        return gene
 
     @property
-    def gene(self):
-        gene = Gene\
+    def learning_gene(self):
+        gene = LearningGene\
             .query\
             .filter_by(origin_uuid=self.uuid)\
             .order_by(desc(Info.creation_time))\
@@ -248,6 +257,13 @@ class RogersAgent(Agent):
         info.copy_to(self)
 
         # Mutate.
-        if random.random() < self.mutation_rate:
+        if random.random() < self.mutation_gene.contents:
             all_strategies = ["social", "asocial"]
-            self.gene.contents = all_strategies[not all_strategies.index(self.gene.contents)]
+            self.learning_gene.contents = all_strategies[not all_strategies.index(self.mutation_gene.contents)]
+
+    def set_mutation(self, q):
+        self.mutation_gene.contents = q
+
+
+
+
