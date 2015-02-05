@@ -72,10 +72,26 @@ class RogersSource(Source):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_source"}
 
+    """the source has two genes - the mutation gene and the learning gene
+    these can be accessed as properties """
+    @property
+    def mutation_gene(self):
+        gene = MutationGene\
+        .query\
+        .filter_by(origin_uuid=self.uuid)\
+        .first()
+        return gene.contents
 
     def _selector(self):
         info = Gene(
             origin=self,
+    @property
+    def learning_gene(self):
+        gene = LearningGene\
+        .query\
+        .filter_by(origin_uuid=self.uuid)\
+        .first()
+        return gene.contents
             origin_uuid=self.uuid,
             contents=self._data())
 
