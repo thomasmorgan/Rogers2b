@@ -107,7 +107,7 @@ class RogersSource(Source):
         return "asocial"
 
     def _contents_mutation_gene(self):
-        return "0"
+        return 0
 
     """ this method transmits both the genes """
     def _selector(self):
@@ -264,7 +264,7 @@ class RogersAgent(Agent):
             info.copy_to(self)
 
         # Mutate.
-        if random.random() < self.mutation_gene.contents:
+        if random.random() < float(self.mutation_gene.contents):
             all_strategies = ["social", "asocial"]
             self.learning_gene.contents = all_strategies[not all_strategies.index(self.learning_gene.contents)]
 
