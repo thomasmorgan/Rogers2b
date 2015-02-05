@@ -72,9 +72,6 @@ class RogersSource(Source):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_source"}
 
-    @staticmethod
-    def _data():
-        return "asocial"
 
     def _selector(self):
         info = Gene(
