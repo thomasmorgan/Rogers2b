@@ -12,11 +12,11 @@ from sqlalchemy import desc
 
 
 class LearningGene(Gene):
-    __mapper_args__ = {"polymorphic_identity": "gene_learning"}
+    __mapper_args__ = {"polymorphic_identity": "learning_gene"}
 
 
 class MutationGene(Gene):
-    __mapper_args__ = {"polymorphic_identity": "gene_mutation"}
+    __mapper_args__ = {"polymorphic_identity": "mutation_gene"}
 
 
 class Rogers(Experiment):
