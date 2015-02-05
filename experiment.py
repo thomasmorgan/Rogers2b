@@ -89,10 +89,23 @@ class RogersSource(Source):
         .filter_by(origin_uuid=self.uuid)\
         .first()
         return gene.contents
-            origin_uuid=self.uuid,
-            contents=self._data())
 
-        return [info]
+    """this method sets up all the infos for the source to transmit
+    everytime it is called it should make a new info for each of the two genes """
+    def create_information():
+        learning_gene = LearningGene(origin=self,
+            origin_uuid=self.uuid,
+            contents=_contents_learning_gene())
+        mutation_gene = MutationGene(origin=self,
+            origin_uuid=self.uuid,
+            contents=_contents_mutation_gene())
+    
+    def _contents_learning_gene:
+        return "asocial"
+
+    def _contents_mutation_gene:
+        return "0"
+
     """ this method transmits both the genes """
     def _selector(self):
         return Gene
