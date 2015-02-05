@@ -37,7 +37,7 @@ class TestNetworks(object):
     def test_rogers_network_process(self):
 
         n = 20
-        apg = 2
+        apg = 5
 
         # Create the network and process.
         net = RogersNetwork(RogersAgent, self.db,

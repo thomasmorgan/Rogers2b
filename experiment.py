@@ -72,6 +72,9 @@ class RogersSource(Source):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_source"}
 
+    def __init__(self):
+        self.create_information()
+
     """the source has two genes - the mutation gene and the learning gene
     these can be accessed as properties """
     @property
@@ -190,6 +193,8 @@ class RogersNetworkProcess(Process):
             """ note, we can use an idex of -1 to specify the most recent agent! """
             self.network.sources[0].transmit(self.network.agents[-1])
             newcomer.receive_all()
+            print newcomer.mutation_gene.contents
+            print newcomer.learning_gene.contents
             """ this method added to enable mutation after the first generation """
             newcomer.set_mutation(0.5)
         else:
@@ -205,14 +210,15 @@ class RogersNetworkProcess(Process):
                     parent = potential_parents[i]
             parent.transmit(newcomer, selector=Gene)
             newcomer.receive_all()
+            print newcomer.mutation_gene.contents
+            print newcomer.learning_gene.contents
 
-
-            if (newcomer.gene.contents == "social"):
+            if (newcomer.learning_gene.contents == "social"):
                 rnd = random.randint(0, (self.network.agents_per_generation-1))
                 cultural_parent = potential_parents[rnd]
                 cultural_parent.transmit(newcomer, selector=Meme)
                 newcomer.receive_all()
-            elif (newcomer.gene.contents == "asocial"):
+            elif (newcomer.learning_gene.contents == "asocial"):
                 pass
             else:
                 raise AssertionError("Learner gene set to non-coherent value")
@@ -252,18 +258,15 @@ class RogersAgent(Agent):
             .first()
         return meme
 
-    def update(self, info):
+    def update(self, infos):
 
-        info.copy_to(self)
+        for info in infos:
+            info.copy_to(self)
 
         # Mutate.
         if random.random() < self.mutation_gene.contents:
             all_strategies = ["social", "asocial"]
-            self.learning_gene.contents = all_strategies[not all_strategies.index(self.mutation_gene.contents)]
+            self.learning_gene.contents = all_strategies[not all_strategies.index(self.learning_gene.contents)]
 
     def set_mutation(self, q):
         self.mutation_gene.contents = q
-
-
-
-
