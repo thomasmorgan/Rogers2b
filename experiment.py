@@ -82,9 +82,6 @@ class RogersSource(Source):
         .first()
         return gene.contents
 
-    def _selector(self):
-        info = Gene(
-            origin=self,
     @property
     def learning_gene(self):
         gene = LearningGene\
@@ -96,6 +93,9 @@ class RogersSource(Source):
             contents=self._data())
 
         return [info]
+    """ this method transmits both the genes """
+    def _selector(self):
+        return Gene
 
 
 class RogersNetwork(Network):
