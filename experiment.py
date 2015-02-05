@@ -92,18 +92,18 @@ class RogersSource(Source):
 
     """this method sets up all the infos for the source to transmit
     everytime it is called it should make a new info for each of the two genes """
-    def create_information():
+    def create_information(self):
         learning_gene = LearningGene(origin=self,
             origin_uuid=self.uuid,
-            contents=_contents_learning_gene())
+            contents=self._contents_learning_gene())
         mutation_gene = MutationGene(origin=self,
             origin_uuid=self.uuid,
-            contents=_contents_mutation_gene())
-    
-    def _contents_learning_gene:
+            contents=self._contents_mutation_gene())
+
+    def _contents_learning_gene(self):
         return "asocial"
 
-    def _contents_mutation_gene:
+    def _contents_mutation_gene(self):
         return "0"
 
     """ this method transmits both the genes """
@@ -205,7 +205,7 @@ class RogersNetworkProcess(Process):
                     parent = potential_parents[i]
             parent.transmit(newcomer, selector=Gene)
             newcomer.receive_all()
-            
+
 
             if (newcomer.gene.contents == "social"):
                 rnd = random.randint(0, (self.network.agents_per_generation-1))
