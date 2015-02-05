@@ -72,46 +72,27 @@ class RogersSource(Source):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_source"}
 
-    def __init__(self):
-        self.create_information()
+    """Sets up all the infos for the source to transmit. Every time it is
+    called it should make a new info for each of the two genes."""
+    def create_information(self, selector):
 
-    """the source has two genes - the mutation gene and the learning gene
-    these can be accessed as properties """
-    @property
-    def mutation_gene(self):
-        gene = MutationGene\
-        .query\
-        .filter_by(origin_uuid=self.uuid)\
-        .first()
-        return gene.contents
-
-    @property
-    def learning_gene(self):
-        gene = LearningGene\
-        .query\
-        .filter_by(origin_uuid=self.uuid)\
-        .first()
-        return gene.contents
-
-    """this method sets up all the infos for the source to transmit
-    everytime it is called it should make a new info for each of the two genes """
-    def create_information(self):
-        learning_gene = LearningGene(origin=self,
+        learning_gene = LearningGene(
+            origin=self,
             origin_uuid=self.uuid,
             contents=self._contents_learning_gene())
-        mutation_gene = MutationGene(origin=self,
+
+        mutation_gene = MutationGene(
+            origin=self,
             origin_uuid=self.uuid,
             contents=self._contents_mutation_gene())
+
+        return [learning_gene, mutation_gene]
 
     def _contents_learning_gene(self):
         return "asocial"
 
     def _contents_mutation_gene(self):
         return 0
-
-    """ this method transmits both the genes """
-    def _selector(self):
-        return Gene
 
 
 class RogersNetwork(Network):
@@ -193,8 +174,6 @@ class RogersNetworkProcess(Process):
             """ note, we can use an idex of -1 to specify the most recent agent! """
             self.network.sources[0].transmit(self.network.agents[-1])
             newcomer.receive_all()
-            print newcomer.mutation_gene.contents
-            print newcomer.learning_gene.contents
             """ this method added to enable mutation after the first generation """
             newcomer.set_mutation(0.5)
         else:
@@ -210,8 +189,6 @@ class RogersNetworkProcess(Process):
                     parent = potential_parents[i]
             parent.transmit(newcomer, selector=Gene)
             newcomer.receive_all()
-            print newcomer.mutation_gene.contents
-            print newcomer.learning_gene.contents
 
             if (newcomer.learning_gene.contents == "social"):
                 rnd = random.randint(0, (self.network.agents_per_generation-1))
