@@ -26,6 +26,7 @@ class Rogers(Experiment):
         self.task = "Rogers network game"
         self.num_agents_per_generation = 3
         self.num_generations = 3
+        self.environment = RogersEnvironment()
         self.num_agents = self.num_agents_per_generation*self.num_generations
         self.agent_type = RogersAgent
         self.network = RogersNetwork(self.agent_type, self.session, self.num_agents_per_generation, self.num_generations)
@@ -95,7 +96,7 @@ class RogersSource(Source):
 
     """this method sets up all the infos for the source to transmit
     everytime it is called it should make a new info for each of the two genes """
-    def create_information(self):
+    def create_information(self, what=what, who=who):
         learning_gene = LearningGene(origin=self,
             origin_uuid=self.uuid,
             contents=self._contents_learning_gene())
@@ -110,7 +111,7 @@ class RogersSource(Source):
         return 0
 
     """ this method transmits both the genes """
-    def _selector(self):
+    def _what(self):
         return Gene
 
 
@@ -185,13 +186,14 @@ class RogersNetworkProcess(Process):
 
     def step(self, verbose=True):
 
+        if len(self.net.agents)%self.agents_per_generation == 1:
+            self.environment.step()
+
         newcomer = self.network.last_agent
         current_generation = int(math.floor((len(self.network.agents)*1.0-1)/self.network.agents_per_generation))
 
         if (current_generation == 0):
-            """ this line nolonger needs to specify a info_type """
-            """ note, we can use an idex of -1 to specify the most recent agent! """
-            self.network.sources[0].transmit(self.network.agents[-1])
+            self.network.sources[0].transmit(who=newcomer)
             newcomer.receive_all()
             print newcomer.mutation_gene.contents
             print newcomer.learning_gene.contents
@@ -208,7 +210,7 @@ class RogersNetworkProcess(Process):
                 temp += probability
                 if rnd < temp:
                     parent = potential_parents[i]
-            parent.transmit(newcomer, selector=Gene)
+            parent.transmit(who=newcomer, what=Gene)
             newcomer.receive_all()
             print newcomer.mutation_gene.contents
             print newcomer.learning_gene.contents
@@ -216,7 +218,7 @@ class RogersNetworkProcess(Process):
             if (newcomer.learning_gene.contents == "social"):
                 rnd = random.randint(0, (self.network.agents_per_generation-1))
                 cultural_parent = potential_parents[rnd]
-                cultural_parent.transmit(newcomer, selector=Meme)
+                cultural_parent.transmit(who=newcomer, what=Meme)
                 newcomer.receive_all()
             elif (newcomer.learning_gene.contents == "asocial"):
                 pass
@@ -270,3 +272,31 @@ class RogersAgent(Agent):
 
     def set_mutation(self, q):
         self.mutation_gene.contents = q
+
+    class RogersEnvironment(Environment):
+
+        def __init__(self):
+            try:
+                State.query.all()
+            except Exception:
+                State(origin=self,
+                    origin_uuid=self.uuid,
+                    contents=random.choice([True,False]))
+
+        def step(self):
+            if random.random() < 0.1:
+                current_state = State\
+                    .query\
+                    .filter_by(origin_uuid=self.uuid)\
+                    .order_by(desc(Info.creation_time))\
+                    .first()
+                current_state = (current_state.contents == "True")
+                state = State(origin=self,
+                    origin_uuid=self.uuid,
+                    contents=!current_state)
+
+
+
+
+
+
