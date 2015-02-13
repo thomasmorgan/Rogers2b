@@ -1,5 +1,5 @@
-from wallace import networks, agents, db, sources
-from experiment import RogersNetwork, RogersNetworkProcess, RogersSource, RogersAgent
+from wallace import networks, agents, db, sources, information, models
+from experiment import RogersNetwork, RogersNetworkProcess, RogersSource, RogersAgent, RogersEnvironment
 
 
 class TestNetworks(object):
@@ -10,6 +10,10 @@ class TestNetworks(object):
     def teardown(self):
         self.db.rollback()
         self.db.close()
+
+    def add(self, *args):
+        self.db.add_all(args)
+        self.db.commit()
 
     def test_create_rogers_network_small(self):
         net = RogersNetwork(agents.ReplicatorAgent, self.db, agents_per_generation=3)
@@ -39,10 +43,17 @@ class TestNetworks(object):
         n = 20
         apg = 5
 
+        environment = RogersEnvironment()
+        state = information.State(
+            origin=environment,
+            contents="True")
+        self.add(environment, state)
+
         # Create the network and process.
         net = RogersNetwork(RogersAgent, self.db,
                             agents_per_generation=apg)
-        process = RogersNetworkProcess(net)
+
+        process = RogersNetworkProcess(net, environment)
 
         # Add a source.
         source = RogersSource()
@@ -52,5 +63,3 @@ class TestNetworks(object):
             agent = RogersAgent()
             net.add_agent(agent)
             process.step()
-
-        # print 1.0*sum([a.gene.contents == "social" for a in net.agents][n-apg:])/apg

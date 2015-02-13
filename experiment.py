@@ -3,12 +3,14 @@ from wallace.recruiters import PsiTurkRecruiter
 from wallace.agents import ReplicatorAgent, Agent
 from wallace.experiments import Experiment
 from wallace.sources import Source
-from wallace.information import Gene, Meme
-from wallace.models import Info
+from wallace.information import Gene, Meme, State
+from wallace.models import Info, Environment
 from wallace.networks import Network
 import math
 import random
 from sqlalchemy import desc
+import json
+import random
 
 
 class LearningGene(Gene):
@@ -24,13 +26,13 @@ class Rogers(Experiment):
         super(Rogers, self).__init__(session)
 
         self.task = "Rogers network game"
+        self.environment = RogersEnvironment(self.session)
         self.num_agents_per_generation = 3
         self.num_generations = 3
-        self.environment = RogersEnvironment()
         self.num_agents = self.num_agents_per_generation*self.num_generations
         self.agent_type = RogersAgent
         self.network = RogersNetwork(self.agent_type, self.session, self.num_agents_per_generation, self.num_generations)
-        self.process = RogersNetworkProcess(self.network)
+        self.process = RogersNetworkProcess(self.network, self.environment)
         self.recruiter = PsiTurkRecruiter
 
         # Setup for first time experiment is accessed
@@ -75,13 +77,13 @@ class RogersSource(Source):
 
     """Sets up all the infos for the source to transmit. Every time it is
     called it should make a new info for each of the two genes."""
-    def create_information(self, selector):
-        learning_gene = LearningGene(
+    def create_information(self, what=None, who=None):
+        LearningGene(
             origin=self,
             origin_uuid=self.uuid,
             contents=self._contents_learning_gene())
 
-        mutation_gene = MutationGene(
+        MutationGene(
             origin=self,
             origin_uuid=self.uuid,
             contents=self._contents_mutation_gene())
@@ -92,8 +94,25 @@ class RogersSource(Source):
     def _contents_mutation_gene(self):
         return 0
 
+    @property
+    def most_recent_genes(self):
+        gene1 = LearningGene\
+            .query\
+            .filter_by(origin_uuid=self.uuid)\
+            .order_by(desc(Info.creation_time))\
+            .first()
+
+        gene2 = MutationGene\
+            .query\
+            .filter_by(origin_uuid=self.uuid)\
+            .order_by(desc(Info.creation_time))\
+            .first()
+
+        return [gene1, gene2]
+
     def _what(self):
-        return Gene
+        return self.most_recent_genes
+
 
 class RogersNetwork(Network):
     """In a Rogers Network agents are arranged into genenerations of a set size
@@ -160,13 +179,14 @@ class RogersNetwork(Network):
 
 class RogersNetworkProcess(Process):
 
-    def __init__(self, network):
+    def __init__(self, network, environment):
         self.network = network
+        self.environment = environment
         super(RogersNetworkProcess, self).__init__(network)
 
     def step(self, verbose=True):
 
-        if len(self.net.agents)%self.agents_per_generation == 1:
+        if (len(self.network.agents) % self.network.agents_per_generation) == 1:
             self.environment.step()
 
         newcomer = self.network.last_agent
@@ -188,6 +208,7 @@ class RogersNetworkProcess(Process):
                 temp += probability
                 if rnd < temp:
                     parent = potential_parents[i]
+
             parent.transmit(who=newcomer, what=Gene)
             newcomer.receive_all()
 
@@ -249,30 +270,35 @@ class RogersAgent(Agent):
     def set_mutation(self, q):
         self.mutation_gene.contents = q
 
-    class RogersEnvironment(Environment):
 
-        def __init__(self):
-            try:
-                State.query.all()
-            except Exception:
-                State(origin=self,
-                    origin_uuid=self.uuid,
-                    contents=random.choice([True,False]))
+class RogersEnvironment(Environment):
 
-        def step(self):
-            if random.random() < 0.1:
-                current_state = State\
-                    .query\
-                    .filter_by(origin_uuid=self.uuid)\
-                    .order_by(desc(Info.creation_time))\
-                    .first()
-                current_state = (current_state.contents == "True")
-                state = State(origin=self,
-                    origin_uuid=self.uuid,
-                    contents=!current_state)
+    __mapper_args__ = {"polymorphic_identity": "rogers_environment"}
 
+    def __init__(self):
 
+        try:
+            assert(len(State.query.all()))
+        except Exception:
+            State(
+                origin=self,
+                origin_uuid=self.uuid,
+                contents=True)
 
+    def step(self):
 
+        if random.random() < 0.01:
+            current_state = State\
+                .query\
+                .filter_by(origin_uuid=self.uuid)\
+                .order_by(desc(Info.creation_time))\
+                .first()
 
+            current_state = (current_state.contents == "True")
+            state = State(
+                origin=self,
+                origin_uuid=self.uuid,
+                contents=(not current_state))
 
+            self.db.add(state)
+            self.db.commit()
