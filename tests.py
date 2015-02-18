@@ -40,8 +40,8 @@ class TestNetworks(object):
 
     def test_rogers_network_process(self):
 
-        n = 20
-        apg = 5
+        n = 200
+        apg = 10
 
         environment = RogersEnvironment()
         state = information.State(
@@ -63,3 +63,4 @@ class TestNetworks(object):
             agent = RogersAgent()
             net.add_agent(agent)
             process.step()
+            print environment.state.contents

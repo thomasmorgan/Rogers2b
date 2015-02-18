@@ -1,16 +1,17 @@
+"""Replicate Rogers' paradox by simulating evolution with people."""
+
+from wallace.agents import Agent
+from wallace.environments import Environment
+from wallace.experiments import Experiment
+from wallace.information import Gene, Meme, State
+from wallace.models import Info
+from wallace.networks import Network
 from wallace.processes import Process
 from wallace.recruiters import PsiTurkRecruiter
-from wallace.agents import ReplicatorAgent, Agent
-from wallace.experiments import Experiment
 from wallace.sources import Source
-from wallace.information import Gene, Meme, State
-from wallace.models import Info, Environment
-from wallace.networks import Network
 import math
 import random
 from sqlalchemy import desc
-import json
-import random
 
 
 class LearningGene(Gene):
@@ -21,9 +22,9 @@ class MutationGene(Gene):
     __mapper_args__ = {"polymorphic_identity": "mutation_gene"}
 
 
-class Rogers(Experiment):
+class RogersExperiment(Experiment):
     def __init__(self, session):
-        super(Rogers, self).__init__(session)
+        super(RogersExperiment, self).__init__(session)
 
         self.task = "Rogers network game"
         self.environment = RogersEnvironment(self.session)
@@ -77,7 +78,7 @@ class RogersSource(Source):
 
     """Sets up all the infos for the source to transmit. Every time it is
     called it should make a new info for each of the two genes."""
-    def create_information(self, what=None, who=None):
+    def create_information(self, what=None, to_whom=None):
         LearningGene(
             origin=self,
             origin_uuid=self.uuid,
@@ -193,7 +194,7 @@ class RogersNetworkProcess(Process):
         current_generation = int(math.floor((len(self.network.agents)*1.0-1)/self.network.agents_per_generation))
 
         if (current_generation == 0):
-            self.network.sources[0].transmit(who=newcomer)
+            self.network.sources[0].transmit(to_whom=newcomer)
             newcomer.receive_all()
             """ this method added to enable mutation after the first generation """
             newcomer.set_mutation(0.5)
@@ -218,7 +219,8 @@ class RogersNetworkProcess(Process):
                 cultural_parent.transmit(who=newcomer, what=Meme)
                 newcomer.receive_all()
             elif (newcomer.learning_gene.contents == "asocial"):
-                pass
+                # Observe the environment.
+                newcomer.observe(self.environment)
             else:
                 raise AssertionError("Learner gene set to non-coherent value")
 
@@ -258,9 +260,10 @@ class RogersAgent(Agent):
         return meme
 
     def update(self, infos):
+        for info_in in infos:
+            self.replicate(info_in)
 
-        for info in infos:
-            info.copy_to(self)
+            print info_in
 
         # Mutate.
         if random.random() < float(self.mutation_gene.contents):
@@ -287,18 +290,9 @@ class RogersEnvironment(Environment):
 
     def step(self):
 
-        if random.random() < 0.01:
-            current_state = State\
-                .query\
-                .filter_by(origin_uuid=self.uuid)\
-                .order_by(desc(Info.creation_time))\
-                .first()
-
-            current_state = (current_state.contents == "True")
-            state = State(
+        if random.random() < 0.5:
+            current_state = (self.state.contents == "True")
+            State(
                 origin=self,
                 origin_uuid=self.uuid,
-                contents=(not current_state))
-
-            self.db.add(state)
-            self.db.commit()
+                contents=str(not current_state))
