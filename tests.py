@@ -1,5 +1,5 @@
 from wallace import networks, agents, db, sources, information, models
-from experiment import RogersNetwork, RogersNetworkProcess, RogersSource, RogersAgent, RogersEnvironment, RogersExperiment
+from experiment import RogersNetwork, RogersNetworkProcess, RogersSource, RogersAgent, RogersAgentFounder, RogersEnvironment, RogersExperiment
 
 
 class TestNetworks(object):
@@ -15,54 +15,58 @@ class TestNetworks(object):
         self.db.add_all(args)
         self.db.commit()
 
-    # def test_create_rogers_network_small(self):
-    #     net = RogersNetwork(agents.ReplicatorAgent, self.db, agents_per_generation=3)
+    def test_create_rogers_network_small(self):
+        net = RogersNetwork(agents.ReplicatorAgent, self.db, agents_per_generation=3)
 
-    #     newcomers = []
-    #     for i in range(12):
-    #         agent = agents.ReplicatorAgent()
-    #         newcomers.append(agent)
-    #         net.add_agent(agent)
+        newcomers = []
+        for i in range(12):
+            agent = agents.ReplicatorAgent()
+            newcomers.append(agent)
+            net.add_agent(agent)
 
-    #     assert not newcomers[0].has_connection_to(newcomers[6])
-    #     assert not newcomers[0].has_connection_to(newcomers[7])
-    #     assert not newcomers[0].has_connection_to(newcomers[8])
+        assert not newcomers[0].has_connection_to(newcomers[6])
+        assert not newcomers[0].has_connection_to(newcomers[7])
+        assert not newcomers[0].has_connection_to(newcomers[8])
 
-    #     assert newcomers[0].has_connection_to(newcomers[3])
-    #     assert newcomers[0].has_connection_to(newcomers[4])
-    #     assert newcomers[0].has_connection_to(newcomers[5])
+        assert newcomers[0].has_connection_to(newcomers[3])
+        assert newcomers[0].has_connection_to(newcomers[4])
+        assert newcomers[0].has_connection_to(newcomers[5])
 
-    #     assert newcomers[11].has_connection_from(newcomers[6])
-    #     assert newcomers[11].has_connection_from(newcomers[7])
-    #     assert newcomers[11].has_connection_from(newcomers[8])
+        assert newcomers[11].has_connection_from(newcomers[6])
+        assert newcomers[11].has_connection_from(newcomers[7])
+        assert newcomers[11].has_connection_from(newcomers[8])
 
-    #     assert len(net.vectors) == 30
+        assert len(net.vectors) == 30
 
-    # def test_rogers_network_process(self):
+    def test_rogers_network_process(self):
 
-    #     n = 200
-    #     apg = 10
+        n = 200
+        apg = 10
 
-    #     environment = RogersEnvironment()
-    #     state = information.State(
-    #         origin=environment,
-    #         contents="True")
-    #     self.add(environment, state)
+        environment = RogersEnvironment(self.db)
+        state = information.State(
+            origin=environment,
+            contents="True")
+        self.add(environment, state)
 
-    #     # Create the network and process.
-    #     net = RogersNetwork(RogersAgent, self.db,
-    #                         agents_per_generation=apg)
+        # Create the network and process.
+        net = RogersNetwork(RogersAgent, self.db,
+                            agents_per_generation=apg)
 
-    #     process = RogersNetworkProcess(net, environment)
+        process = RogersNetworkProcess(net, environment)
 
-    #     # Add a source.
-    #     source = RogersSource()
-    #     net.add_source_global(source)
+        # Add a source.
+        source = RogersSource()
+        source.create_information()
+        net.add_source_global(source)
 
-    #     for i in range(n):
-    #         agent = RogersAgent()
-    #         net.add_agent(agent)
-    #         process.step()
+        for i in range(n):
+            if i < apg:
+                agent = RogersAgentFounder()
+            else:
+                agent = RogersAgent()
+            net.add_agent(agent)
+            process.step()
 
     def test_agent_type(self):
 
@@ -74,5 +78,4 @@ class TestNetworks(object):
             newcomer_type = exp.agent_type_generator()
             newcomer = newcomer_type()
             exp.network.add_agent(newcomer)
-            print newcomer
             exp.process.step()
