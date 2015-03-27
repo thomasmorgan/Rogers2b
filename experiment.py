@@ -4,7 +4,7 @@ from wallace.agents import Agent
 from wallace.environments import Environment
 from wallace.experiments import Experiment
 from wallace.information import Gene, Meme, State
-from wallace.models import Info
+from wallace.models import Info, Vector
 from wallace.networks import Network
 from wallace.processes import Process
 from wallace.recruiters import PsiTurkRecruiter
@@ -29,8 +29,9 @@ class RogersExperiment(Experiment):
         super(RogersExperiment, self).__init__(session)
 
         self.task = "Rogers network game"
-        self.num_agents_per_generation = 3
-        self.num_generations = 3
+        self.num_agents_per_generation = 20
+        self.num_generations = 20
+        self.num_agents = self.num_agents_per_generation * self.num_generations
         self.environment = RogersEnvironment(self.session)
         self.num_agents = self.num_agents_per_generation*self.num_generations
         self.network = RogersNetwork(self.agent_type_generator, self.session, self.num_agents_per_generation, self.num_generations)
@@ -100,7 +101,7 @@ class RogersSource(Source):
 
 
 class RogersNetwork(Network):
-    """In a Rogers Network agents are arranged into genenerations of a set size
+    """In a Rogers Network agents are arranged into generations of a set size
     and each agent is connected to all agents in the previous generation (the
     first generation agents are connected to a source)
     """
@@ -111,7 +112,20 @@ class RogersNetwork(Network):
         self.num_generations = num_generations
         super(RogersNetwork, self).__init__(agent_type_generator, db)
 
-    @property
+    def proportion_social_learners(self, generation=None):
+
+        is_social_learner = [
+            a.learning_gene.contents == "social" for a in self.agents_of_generation(generation)]
+
+        return 1.0 * sum(is_social_learner) / len(is_social_learner)
+
+    def average_fitness(self, generation=None):
+
+        fitnesses = [
+            float(a.fitness) for a in self.agents_of_generation(generation)]
+
+        return sum(fitnesses) / len(fitnesses)
+
     def first_agent(self):
         if len(self.agents) > 0:
             return self.db.query(Agent)\
@@ -150,6 +164,11 @@ class RogersNetwork(Network):
             for a in previous_generation_agents:
                 a.connect_to(newcomer)
 
+        # Connect the newcomer and environment
+        environment = Environment.query.first()
+        environment.connect_to(newcomer)
+        print environment
+
         return newcomer
 
     def agents_of_generation(self, generation):
@@ -167,26 +186,35 @@ class RogersNetworkProcess(Process):
 
     def step(self, verbose=True):
 
+        current_generation = int(math.floor((len(self.network.agents)*1.0-1)/self.network.agents_per_generation))
+
         if (len(self.network.agents) % self.network.agents_per_generation) == 1:
             self.environment.step()
 
         newcomer = self.network.last_agent
-        current_generation = int(math.floor((len(self.network.agents)*1.0-1)/self.network.agents_per_generation))
 
         if (current_generation == 0):
             self.network.sources[0].transmit(to_whom=newcomer)
             newcomer.receive_all()
         else:
             parent = None
-            potential_parents = self.network.agents_of_generation(current_generation-1)
-            potential_parent_fitnesses = [p.fitness() for p in potential_parents]
+            potential_parents = newcomer.predecessors2
+
+            incoming_vectors = Vector.query.filter_by(destination=newcomer).all()
+            potential_parents = [v.origin for v in incoming_vectors if isinstance(v.origin, Agent)]
+
+            # potential_parents = self.network.agents_of_generation(current_generation-1)
+            potential_parent_fitnesses = [p.fitness for p in potential_parents]
             potential_parent_probabilities = [(f/(1.0*sum(potential_parent_fitnesses))) for f in potential_parent_fitnesses]
+            # print ["%.2f" % (p,) for p in potential_parent_probabilities]
+
             rnd = random.random()
             temp = 0.0
             for i, probability in enumerate(potential_parent_probabilities):
                 temp += probability
-                if rnd < temp:
+                if temp > rnd:
                     parent = potential_parents[i]
+                    break
 
             parent.transmit(what=Gene, to_whom=newcomer)
             newcomer.receive_all()
@@ -207,8 +235,23 @@ class RogersAgent(Agent):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_agent"}
 
+    @property
     def fitness(self):
-        return 1
+        state = State\
+            .query\
+            .order_by(desc(Info.creation_time))\
+            .first()
+
+        matches_environment = (self.meme.contents == state.contents)
+        is_asocial = (self.learning_gene.contents == "asocial")
+
+        e = 2
+
+        b = 20
+        c = 9
+        baseline = 10
+
+        return (baseline + matches_environment * b - is_asocial * c) ** e
 
     @property
     def learning_gene(self):
@@ -230,7 +273,7 @@ class RogersAgent(Agent):
 
     def mutate(self, info_in):
         # If mutation is happening...
-        if random.random() < 0.5:
+        if random.random() < 0.10:
 
             # Create a new info based on the old one.
             strats = ["social", "asocial"]
@@ -260,12 +303,22 @@ class RogersAgent(Agent):
                 self.replicate(info_in)
 
             elif isinstance(info_in, State):
-                # Register an observation.
-                info_out = Meme(origin=self, contents=info_in.contents)
-                Observation(
-                    info_out=info_out,
-                    info_in=info_in,
-                    node=self)
+                if random.random() < 1:
+                    # Observe the environment cleanly.
+                    info_out = Meme(origin=self, contents=info_in.contents)
+                    SuccessfulObservation(
+                        info_out=info_out,
+                        info_in=info_in,
+                        node=self)
+
+                else:
+                    # Flip the bit.
+                    new_observation = str(info_in.contents != "True")
+                    info_out = Meme(origin=self, contents=new_observation)
+                    FailedObservation(
+                        info_out=info_out,
+                        info_in=info_in,
+                        node=self)
 
             else:
                 raise ValueError(
@@ -278,6 +331,16 @@ class RogersAgentFounder(RogersAgent):
 
     def mutate(self, info_in):
         self.replicate(info_in)
+
+
+class SuccessfulObservation(Observation):
+
+    __mapper_args__ = {"polymorphic_identity": "observation_successful"}
+
+
+class FailedObservation(Observation):
+
+    __mapper_args__ = {"polymorphic_identity": "observation_failed"}
 
 
 class RogersEnvironment(Environment):
@@ -300,7 +363,8 @@ class RogersEnvironment(Environment):
 
     def step(self):
 
-        if random.random() < 1:
+        if random.random() < 0.10:
+            print "mutate!"
             current_state = (self.state.contents == "True")
             State(
                 origin=self,
