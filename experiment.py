@@ -29,23 +29,38 @@ class RogersExperiment(Experiment):
         super(RogersExperiment, self).__init__(session)
 
         self.task = "Rogers network game"
-        self.num_agents_per_generation = 20
-        self.num_generations = 20
-        self.num_agents = self.num_agents_per_generation * self.num_generations
-        self.environment = RogersEnvironment(self.session)
-        self.num_agents = self.num_agents_per_generation*self.num_generations
-        self.network = RogersNetwork(self.agent_type_generator, self.session, self.num_agents_per_generation, self.num_generations)
-        self.process = RogersNetworkProcess(self.network, self.environment)
+        self.num_repeats = 1
+        self.network_type = RogersNetwork
+        self.environment_type = RogersEnvironment
+        self.process_type = RogersNetworkProcess
         self.recruiter = PsiTurkRecruiter
 
-        # Setup for first time experiment is accessed
-        if not self.network.sources:
-            source = RogersSource()
-            self.network.add_source_global(source)
-            source.create_information()
+        # Get a list of all the networks, creating them if they don't already
+        # exist.
+        self.networks = Network.query.all()
+        if not self.networks:
+            for i in range(self.num_repeats):
+                net = self.network_type()
+                self.session.add(net)
+        self.networks = Network.query.all()
 
-    def agent_type_generator(self):
-        if len(self.network.agents) < self.num_agents_per_generation:
+        # Setup for first time experiment is accessed
+        for net in self.networks:
+            if not net.sources:
+                source = RogersSource()
+                self.session.add(source)
+                environment = RogersEnvironment()
+                environment.network = net
+                self.session.add(environment)
+                self.session.commit()
+                net.add_source(source)
+                source.create_information()
+                print source
+                print "Added source: " + str(source)
+                self.session.commit()
+
+    def agent_type_generator(self, network=None):
+        if len(network.agents) < network.num_agents_per_generation:
             return RogersAgentFounder
         else:
             return RogersAgent
@@ -65,17 +80,18 @@ class RogersExperiment(Experiment):
     def information_creation_trigger(self, info):
 
         agent = info.origin
-        self.network.db.add(agent)
+        self.session.add(agent)
+        self.session.commit()
 
         if self.is_experiment_over():
             # If the experiment is over, stop recruiting and export the data.
-            self.recruiter().close_recruitment()
+            self.recruiter().close_recruitment(self)
         else:
             # Otherwise recruit a new participant.
-            self.recruiter().recruit_new_participants(self, n=self.num_agents_per_generation)
+            self.recruiter().recruit_new_participants(self, n=1)
 
-    def is_experiment_over(self):
-        return len(self.network.agents) == self.num_agents
+    def is_network_full(self, network):
+        return len(network.agents) >= self.num_agents
 
 
 class RogersSource(Source):
@@ -106,11 +122,11 @@ class RogersNetwork(Network):
     first generation agents are connected to a source)
     """
 
-    def __init__(self, agent_type_generator, db, agents_per_generation=10, num_generations=10):
-        self.db = db
-        self.agents_per_generation = agents_per_generation
-        self.num_generations = num_generations
-        super(RogersNetwork, self).__init__(agent_type_generator, db)
+    __mapper_args__ = {"polymorphic_identity": "chain"}
+
+    def __init__(self):
+        self.num_agents_per_generation = 3
+        self.num_generations = 3
 
     def proportion_social_learners(self, generation=None):
 
@@ -128,7 +144,8 @@ class RogersNetwork(Network):
 
     def first_agent(self):
         if len(self.agents) > 0:
-            return self.db.query(Agent)\
+            return Agent\
+                .query\
                 .order_by(Agent.creation_time)\
                 .filter(Agent.status != "failed")\
                 .first()
@@ -138,7 +155,8 @@ class RogersNetwork(Network):
     @property
     def last_agent(self):
         if len(self.agents) > 0:
-            return self.db.query(Agent)\
+            return Agent\
+                .query\
                 .order_by(Agent.creation_time.desc())\
                 .filter(Agent.status != "failed")\
                 .first()
@@ -146,20 +164,22 @@ class RogersNetwork(Network):
             return None
 
     def add_agent(self, newcomer):
-        if len(self.sources) is 0:
-            self.db.add(RogersSource())
 
-        self.db.add(newcomer)
+        newcomer.network = self
+
+        print len(self.agents)
 
         # Place them in the network.
-        if len(self.agents) <= self.agents_per_generation:
+        if len(self.agents) <= self.num_agents_per_generation:
             self.sources[0].connect_to(newcomer)
+            print "yay"
         else:
-            newcomer_generation = math.floor(((len(self.agents)-1)*1.0)/self.agents_per_generation)
-            min_previous_generation = (newcomer_generation-1)*self.agents_per_generation
-            previous_generation_agents = self.db.query(Agent)\
+            newcomer_generation = math.floor(((len(self.agents)-1)*1.0)/self.num_agents_per_generation)
+            min_previous_generation = (newcomer_generation-1)*self.num_agents_per_generation
+            previous_generation_agents = Agent\
+                .query\
                 .filter(Agent.status != "failed")\
-                .order_by(Agent.creation_time)[min_previous_generation:(min_previous_generation+self.agents_per_generation)]
+                .order_by(Agent.creation_time)[min_previous_generation:(min_previous_generation+self.num_agents_per_generation)]
 
             for a in previous_generation_agents:
                 a.connect_to(newcomer)
@@ -172,23 +192,26 @@ class RogersNetwork(Network):
         return newcomer
 
     def agents_of_generation(self, generation):
-        first_index = generation*self.agents_per_generation
-        last_index = first_index+(self.agents_per_generation)
+        first_index = generation*self.num_agents_per_generation
+        last_index = first_index+(self.num_agents_per_generation)
         return self.agents[first_index:last_index]
 
 
 class RogersNetworkProcess(Process):
 
-    def __init__(self, network, environment):
+    def __init__(self, network):
         self.network = network
-        self.environment = environment
+        self.environment = Environment\
+            .query\
+            .filter_by(network=network)\
+            .one()
         super(RogersNetworkProcess, self).__init__(network)
 
     def step(self, verbose=True):
 
-        current_generation = int(math.floor((len(self.network.agents)*1.0-1)/self.network.agents_per_generation))
+        current_generation = int(math.floor((len(self.network.agents)*1.0-1)/self.network.num_agents_per_generation))
 
-        if (len(self.network.agents) % self.network.agents_per_generation) == 1:
+        if (len(self.network.agents) % self.network.num_agents_per_generation) == 1:
             self.environment.step()
 
         newcomer = self.network.last_agent
@@ -212,7 +235,9 @@ class RogersNetworkProcess(Process):
             temp = 0.0
             for i, probability in enumerate(potential_parent_probabilities):
                 temp += probability
+                print i, "nope"
                 if temp > rnd:
+                    print "yep"
                     parent = potential_parents[i]
                     break
 
@@ -220,7 +245,7 @@ class RogersNetworkProcess(Process):
             newcomer.receive_all()
 
         if (newcomer.learning_gene.contents == "social"):
-            rnd = random.randint(0, (self.network.agents_per_generation-1))
+            rnd = random.randint(0, (self.network.num_agents_per_generation-1))
             cultural_parent = potential_parents[rnd]
             cultural_parent.transmit(what=Meme, to_whom=newcomer)
             newcomer.receive_all()
@@ -347,19 +372,15 @@ class RogersEnvironment(Environment):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_environment"}
 
-    def __init__(self, session):
-
-        self.session = session
+    def __init__(self):
 
         try:
             assert(len(State.query.all()))
         except Exception:
-            state = State(
+            State(
                 origin=self,
                 origin_uuid=self.uuid,
                 contents=True)
-
-            self.session.add(state)
 
     def step(self):
 

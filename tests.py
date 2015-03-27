@@ -78,23 +78,38 @@ class TestNetworks(object):
 
         exp = RogersExperiment(self.db)
 
+        net = exp.networks[0]
+
         f = []
         p = []
 
-        for i in range(exp.num_generations):
-            for j in range(exp.num_agents_per_generation):
-                print i*exp.num_agents_per_generation + j
-                newcomer_type = exp.agent_type_generator()
-                newcomer = newcomer_type()
-                exp.network.add_agent(newcomer)
-                exp.process.step()
+        for i in range(net.num_generations):
+            for j in range(net.num_agents_per_generation):
+                print i*net.num_agents_per_generation + j
+                newcomer_type = exp.agent_type_generator(network=net)
 
-            f.append(exp.network.average_fitness(generation=i))
-            p.append(exp.network.proportion_social_learners(generation=i))
+                newcomer = newcomer_type()
+                self.db.add(newcomer)
+                self.db.commit()
+
+                net.add_agent(newcomer)
+                self.db.commit()
+
+                # print newcomer.predecessors2
+
+                # print exp.networks[0].sources[0]
+                # print newcomer
+                # print net.vectors
+
+                # print exp.networks[0].sources[0].has_connection_to(newcomer)
+                # print exp.networks[0].sources[0].successors2
+
+                exp.process_type(net).step()
+
+            f.append(net.average_fitness(generation=i))
+            p.append(net.proportion_social_learners(generation=i))
 
             print f
             print p
 
         self.db.commit()
-
-        raw_input()
