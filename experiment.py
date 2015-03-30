@@ -38,7 +38,6 @@ class RogersExperiment(Experiment):
         # Get a list of all the networks, creating them if they don't already
         # exist.
         self.networks = Network.query.all()
-        print self.networks
         if not self.networks:
             for i in range(self.num_repeats):
                 net = self.network_type()
@@ -56,8 +55,6 @@ class RogersExperiment(Experiment):
                 self.session.commit()
                 net.add_source(source)
                 source.create_information()
-                print source
-                print "Added source: " + str(source)
                 self.session.commit()
 
     def agent_type_generator(self, network=None):
@@ -88,8 +85,6 @@ class RogersExperiment(Experiment):
             self.recruiter().recruit_new_participants(self, n=1)
 
     def is_network_full(self, network):
-        print "Here's our network:"
-        print network
         return len(network.agents) >= network.num_agents
 
 
@@ -172,15 +167,11 @@ class RogersNetwork(Network):
     def add_agent(self, newcomer):
 
         newcomer.network = self
-
-        print len(self.agents)
-
         vectors = []
 
         # Place them in the network.
         if len(self.agents) <= self.num_agents_per_generation:
             self.sources[0].connect_to(newcomer)
-            print "yay"
         else:
             newcomer_generation = math.floor(((len(self.agents)-1)*1.0)/self.num_agents_per_generation)
             min_previous_generation = (newcomer_generation-1)*self.num_agents_per_generation
@@ -216,28 +207,16 @@ class RogersNetworkProcess(Process):
 
     def step(self, verbose=True):
 
-        print "## IN STEP"
-
-        print self.network.num_agents_per_generation
-        print self.network.agents
-
         current_generation = int(math.floor((len(self.network.agents)*1.0-1)/self.network.num_agents_per_generation))
-
-        print current_generation
 
         if (len(self.network.agents) % self.network.num_agents_per_generation) == 1:
             self.environment.step()
 
-        print "## IN STEP 2"
-
         newcomer = self.network.last_agent
 
         if (current_generation == 0):
-            print "## IN STEP 3"
             self.network.sources[0].transmit(to_whom=newcomer)
             # newcomer.receive_all()
-            print Transmission.query.all()
-            print "## IN STEP 4"
         else:
             parent = None
             potential_parents = newcomer.predecessors2
@@ -254,9 +233,7 @@ class RogersNetworkProcess(Process):
             temp = 0.0
             for i, probability in enumerate(potential_parent_probabilities):
                 temp += probability
-                print i, "nope"
                 if temp > rnd:
-                    print "yep"
                     parent = potential_parents[i]
                     break
 
@@ -271,7 +248,6 @@ class RogersNetworkProcess(Process):
             cultural_parent.transmit(what=Meme, to_whom=newcomer)
             # newcomer.receive_all()
         elif (newcomer.learning_gene.contents == "asocial"):
-            print "## IN STEP 6"
             # Observe the environment.
             newcomer.observe(self.environment)
         else:
@@ -337,7 +313,6 @@ class RogersAgent(Agent):
             self.replicate(info_in)
 
     def update(self, infos):
-
         for info_in in infos:
 
             if isinstance(info_in, MutationGene):
@@ -407,7 +382,6 @@ class RogersEnvironment(Environment):
     def step(self):
 
         if random.random() < 0.10:
-            print "mutate!"
             current_state = (self.state.contents == "True")
             State(
                 origin=self,
