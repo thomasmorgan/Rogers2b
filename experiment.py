@@ -4,7 +4,7 @@ from wallace.agents import Agent
 from wallace.environments import Environment
 from wallace.experiments import Experiment
 from wallace.information import Gene, Meme, State
-from wallace.models import Info, Vector
+from wallace.models import Info, Vector, Transmission
 from wallace.networks import Network
 from wallace.processes import Process
 from wallace.recruiters import PsiTurkRecruiter
@@ -38,6 +38,7 @@ class RogersExperiment(Experiment):
         # Get a list of all the networks, creating them if they don't already
         # exist.
         self.networks = Network.query.all()
+        print self.networks
         if not self.networks:
             for i in range(self.num_repeats):
                 net = self.network_type()
@@ -65,17 +66,13 @@ class RogersExperiment(Experiment):
         else:
             return RogersAgent
 
-    def newcomer_arrival_trigger(self, newcomer):
-
-        self.network.add_agent(newcomer)
-
-        # Run the next step of the process.
-        self.process.step()
-
     def transmission_reception_trigger(self, transmissions):
         # Mark transmissions as received
         for t in transmissions:
             t.mark_received()
+
+        for t in transmissions:
+            t.destination.update(t.info)
 
     def information_creation_trigger(self, info):
 
@@ -91,7 +88,9 @@ class RogersExperiment(Experiment):
             self.recruiter().recruit_new_participants(self, n=1)
 
     def is_network_full(self, network):
-        return len(network.agents) >= self.num_agents
+        print "Here's our network:"
+        print network
+        return len(network.agents) >= network.num_agents
 
 
 class RogersSource(Source):
@@ -122,16 +121,23 @@ class RogersNetwork(Network):
     first generation agents are connected to a source)
     """
 
-    __mapper_args__ = {"polymorphic_identity": "chain"}
+    __mapper_args__ = {"polymorphic_identity": "rogers"}
 
-    def __init__(self):
-        self.num_agents_per_generation = 3
-        self.num_generations = 3
+    @property
+    def num_agents_per_generation(self):
+        return 3
+
+    @property
+    def num_generations(self):
+        return 3
+
+    @property
+    def num_agents(self):
+        return self.num_agents_per_generation * self.num_generations
 
     def proportion_social_learners(self, generation=None):
 
-        is_social_learner = [
-            a.learning_gene.contents == "social" for a in self.agents_of_generation(generation)]
+        is_social_learner = [a.learning_gene.contents == "social" for a in self.agents_of_generation(generation)]
 
         return 1.0 * sum(is_social_learner) / len(is_social_learner)
 
@@ -169,6 +175,8 @@ class RogersNetwork(Network):
 
         print len(self.agents)
 
+        vectors = []
+
         # Place them in the network.
         if len(self.agents) <= self.num_agents_per_generation:
             self.sources[0].connect_to(newcomer)
@@ -182,14 +190,13 @@ class RogersNetwork(Network):
                 .order_by(Agent.creation_time)[min_previous_generation:(min_previous_generation+self.num_agents_per_generation)]
 
             for a in previous_generation_agents:
-                a.connect_to(newcomer)
+                vectors.append(a.connect_to(newcomer))
 
         # Connect the newcomer and environment
         environment = Environment.query.first()
-        environment.connect_to(newcomer)
-        print environment
+        vectors.append(environment.connect_to(newcomer))
 
-        return newcomer
+        return vectors
 
     def agents_of_generation(self, generation):
         first_index = generation*self.num_agents_per_generation
@@ -209,16 +216,28 @@ class RogersNetworkProcess(Process):
 
     def step(self, verbose=True):
 
+        print "## IN STEP"
+
+        print self.network.num_agents_per_generation
+        print self.network.agents
+
         current_generation = int(math.floor((len(self.network.agents)*1.0-1)/self.network.num_agents_per_generation))
+
+        print current_generation
 
         if (len(self.network.agents) % self.network.num_agents_per_generation) == 1:
             self.environment.step()
 
+        print "## IN STEP 2"
+
         newcomer = self.network.last_agent
 
         if (current_generation == 0):
+            print "## IN STEP 3"
             self.network.sources[0].transmit(to_whom=newcomer)
-            newcomer.receive_all()
+            # newcomer.receive_all()
+            print Transmission.query.all()
+            print "## IN STEP 4"
         else:
             parent = None
             potential_parents = newcomer.predecessors2
@@ -242,14 +261,17 @@ class RogersNetworkProcess(Process):
                     break
 
             parent.transmit(what=Gene, to_whom=newcomer)
-            newcomer.receive_all()
+            # newcomer.receive_all()
+
+        print "## IN STEP 5"
 
         if (newcomer.learning_gene.contents == "social"):
             rnd = random.randint(0, (self.network.num_agents_per_generation-1))
             cultural_parent = potential_parents[rnd]
             cultural_parent.transmit(what=Meme, to_whom=newcomer)
-            newcomer.receive_all()
+            # newcomer.receive_all()
         elif (newcomer.learning_gene.contents == "asocial"):
+            print "## IN STEP 6"
             # Observe the environment.
             newcomer.observe(self.environment)
         else:
@@ -324,30 +346,30 @@ class RogersAgent(Agent):
             elif isinstance(info_in, LearningGene):
                 self.mutate(info_in)
 
-            elif isinstance(info_in, Meme):
-                self.replicate(info_in)
+            # elif isinstance(info_in, Meme):
+            #     self.replicate(info_in)
 
-            elif isinstance(info_in, State):
-                if random.random() < 1:
-                    # Observe the environment cleanly.
-                    info_out = Meme(origin=self, contents=info_in.contents)
-                    SuccessfulObservation(
-                        info_out=info_out,
-                        info_in=info_in,
-                        node=self)
+            # elif isinstance(info_in, State):
+            #     if random.random() < 1:
+            #         # Observe the environment cleanly.
+            #         info_out = Meme(origin=self, contents=info_in.contents)
+            #         SuccessfulObservation(
+            #             info_out=info_out,
+            #             info_in=info_in,
+            #             node=self)
 
-                else:
-                    # Flip the bit.
-                    new_observation = str(info_in.contents != "True")
-                    info_out = Meme(origin=self, contents=new_observation)
-                    FailedObservation(
-                        info_out=info_out,
-                        info_in=info_in,
-                        node=self)
+            #     else:
+            #         # Flip the bit.
+            #         new_observation = str(info_in.contents != "True")
+            #         info_out = Meme(origin=self, contents=new_observation)
+            #         FailedObservation(
+            #             info_out=info_out,
+            #             info_in=info_in,
+            #             node=self)
 
-            else:
-                raise ValueError(
-                    "{} can't update on {}s".format(self, type(info_in)))
+            # else:
+            #     raise ValueError(
+            #         "{} can't update on {}s".format(self, type(info_in)))
 
 
 class RogersAgentFounder(RogersAgent):
