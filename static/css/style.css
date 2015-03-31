@@ -8,6 +8,17 @@ body {
     font-size: 13pt;
 }
 
+#stimulus {
+  padding-top: 15px;
+}
+
+#more-blue {
+  width: 100px;
+}
+
+#more-yellow {
+  width: 100px;
+}
 
 /* text styling */
 strong {

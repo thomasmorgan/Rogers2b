@@ -54,10 +54,28 @@ var StroopExperiment = function() {
 		    type: 'json',
 		  	success: function (resp) {
 		  		agent_uuid = resp.agents.uuid;
-		     	getPendingTransmissions(agent_uuid);
+		     	getAllInformation(agent_uuid);
 		    },
 		    error: function (err) {
 			  	currentview = new Questionnaire();
+		    }
+		});
+	};
+
+	// Get all the infos
+	getAllInformation = function(agent_uuid) {
+		reqwest({
+		    url: "/information",
+		    method: 'get',
+		    data: { origin_uuid: agent_uuid },
+		    type: 'json',
+		  	success: function (resp) {
+                learning_strategy = resp.information[0].contents;
+             	console.log(learning_strategy);
+                getPendingTransmissions(agent_uuid);
+		    },
+		    error: function (err) {
+		    	console.log(err);
 		    }
 		});
 	};
@@ -68,6 +86,7 @@ var StroopExperiment = function() {
 		    method: 'get',
 		    type: 'json',
 		  	success: function (resp) {
+		  		console.log(resp);
 		  		info_uuid = resp.transmissions[0].info_uuid;
 		     	info = getInfo(info_uuid);
 		    },
@@ -83,12 +102,48 @@ var StroopExperiment = function() {
 		    method: 'get',
 		    type: 'json',
 		  	success: function (resp) {
-		     	story = resp.contents;
-		     	storyHTML = markdown.toHTML(story);
-		     	$("#story").html(storyHTML);
-		     	$("#stimulus").show();
-				$("#response-form").hide();
-		     	$("#finish-reading").show();
+
+		  		// Show the participant the stimulus.
+		  		if (learning_strategy == "asocial") {
+
+		  			$("#instructions").text("Are there more blue or yellow dots?")
+
+			     	state = resp.contents;
+
+			     	if (state == "0") {
+						$("#stimulus").attr("src", "/static/images/blue.jpg");
+					} else {
+						$("#stimulus").attr("src", "/static/images/yellow.jpg");
+					}
+
+					$("#stimulus").show();
+					$("#stimulus").show();
+					$("#more-blue").addClass('disabled');
+					$("#more-yellow").addClass('disabled');
+
+					setTimeout(function () {
+						$("#stimulus").hide();
+						$("#stimulus").hide();
+						console.log("ping");
+						$("#more-blue").removeClass('disabled');
+						$("#more-yellow").removeClass('disabled');
+					}, 500);
+
+			     	$("#stimulus-stage").show();
+					$("#response-form").hide();
+			     	$("#more-yellow").show();
+			     	$("#more-blue").show();
+		  		}
+
+		  		// Show the participant the hint.
+		  		if (learning_strategy == "social") {
+			     	meme = resp.contents;
+			     	if (meme == "0") {
+			     		$("#instructions").html("Someone else looked at the display and decided that there are more <em>blue dots</em>. Are there more blue or yellow dots?");
+			     	} else if (meme == "1") {
+			     		$("#instructions").html("Someone else looked at the display and decided that there are more <em>yellow dots</em>. Are there more blue or yellow dots?");
+			     	}
+		  		}
 		    },
 		    error: function (err) {
 		    	console.log(err);
@@ -98,20 +153,16 @@ var StroopExperiment = function() {
 
 	createAgent();
 
-	$("#finish-reading").click(function() {
-		$("#stimulus").hide();
-		$("#response-form").show();
-		$("#submit-response").removeClass('disabled');
-		$("#submit-response").html('Submit');
-	});
+	// $("#finish-reading").click(function() {
+	// 	$("#stimulus-stage").hide();
+	// 	$("#response-form").show();
+	// 	$("#submit-response").removeClass('disabled');
+	// });
 
-	$("#submit-response").click(function() {
+	$("#more-blue").click(function() {
 
-		$("#submit-response").addClass('disabled');
-		$("#submit-response").html('Sending...');
-
-		response = encodeURIComponent($("#reproduction").val());
-
+		$("#more-blue").addClass('disabled');
+		$("#more-blue").html('Sending...');
 		$("#reproduction").val("");
 
 		reqwest({
@@ -119,16 +170,40 @@ var StroopExperiment = function() {
 		  	method: 'post',
 		  	data: {
 		  		origin_uuid: agent_uuid,
-		  		contents: response
+		  		contents: "0",
+		  		info_type: "meme"
 		  	},
 		  	success: function (resp) {
+		  		$("#more-blue").removeClass('disabled');
+		  		$("#more-blue").blur();
+		  		$("#more-blue").html('Blue');
 		  		createAgent();
 		  	}
 		});
-		// currentview = new Questionnaire();
-		// psiTurk.recordTrialData({'phase':"TEST", 'response': $("#reproduction").val()});
 	});
 
+	$("#more-yellow").click(function() {
+
+		$("#more-yellow").addClass('disabled');
+		$("#more-yellow").html('Sending...');
+		$("#reproduction").val("");
+
+		reqwest({
+		    url: "/information",
+		  	method: 'post',
+		  	data: {
+		  		origin_uuid: agent_uuid,
+		  		contents: "1",
+		  		info_type: "meme"
+		  	},
+		  	success: function (resp) {
+		  		$("#more-yellow").removeClass('disabled');
+		  		$("#more-yellow").blur();
+		  		$("#more-yellow").html('Yellow');
+		  		createAgent();
+		  	}
+		});
+	});
 };
 
 /****************

@@ -85,7 +85,7 @@ class TestNetworks(object):
 
         for i in range(net.num_generations):
             for j in range(net.num_agents_per_generation):
-                print i*net.num_agents_per_generation + j
+                print "currently feeding in agent: ", i*net.num_agents_per_generation + j
                 newcomer_type = exp.agent_type_generator(network=net)
 
                 newcomer = newcomer_type()
@@ -106,10 +106,10 @@ class TestNetworks(object):
 
                 exp.process_type(net).step()
 
-            f.append(net.average_fitness(generation=i))
-            p.append(net.proportion_social_learners(generation=i))
+            #f.append(net.average_fitness(generation=i))
+            #p.append(net.proportion_social_learners(generation=i))
 
-            print f
-            print p
+            #print f
+            #print p
 
         self.db.commit()

@@ -29,7 +29,7 @@ class RogersExperiment(Experiment):
         super(RogersExperiment, self).__init__(session)
 
         self.task = "Rogers network game"
-        self.num_repeats = 1
+        self.num_repeats = 4
         self.network_type = RogersNetwork
         self.environment_type = RogersEnvironment
         self.process_type = RogersNetworkProcess
@@ -69,7 +69,7 @@ class RogersExperiment(Experiment):
             t.mark_received()
 
         for t in transmissions:
-            t.destination.update(t.info)
+            t.destination.update([t.info])
 
     def information_creation_trigger(self, info):
 
@@ -120,11 +120,11 @@ class RogersNetwork(Network):
 
     @property
     def num_agents_per_generation(self):
-        return 3
+        return 2
 
     @property
     def num_generations(self):
-        return 3
+        return 2
 
     @property
     def num_agents(self):
@@ -184,7 +184,7 @@ class RogersNetwork(Network):
                 vectors.append(a.connect_to(newcomer))
 
         # Connect the newcomer and environment
-        environment = Environment.query.first()
+        environment = Environment.query.filter_by(network=self).one()
         vectors.append(environment.connect_to(newcomer))
 
         return vectors
@@ -240,7 +240,7 @@ class RogersNetworkProcess(Process):
             parent.transmit(what=Gene, to_whom=newcomer)
             # newcomer.receive_all()
 
-        print "## IN STEP 5"
+        newcomer.receive_all()
 
         if (newcomer.learning_gene.contents == "social"):
             rnd = random.randint(0, (self.network.num_agents_per_generation-1))
@@ -265,7 +265,12 @@ class RogersAgent(Agent):
             .order_by(desc(Info.creation_time))\
             .first()
 
-        matches_environment = (self.meme.contents == state.contents)
+        try:
+            matches_environment = (self.meme.contents == state.contents)
+        except Exception, e:
+            matches_environment = False
+            print "Warning! Calculating the fitness of a meme-less agent!"
+            print "Setting meme to wrong answer for test's sake"
         is_asocial = (self.learning_gene.contents == "asocial")
 
         e = 2
@@ -296,7 +301,7 @@ class RogersAgent(Agent):
 
     def mutate(self, info_in):
         # If mutation is happening...
-        if random.random() < 0.10:
+        if random.random() < 1:
 
             # Create a new info based on the old one.
             strats = ["social", "asocial"]
@@ -372,7 +377,7 @@ class RogersEnvironment(Environment):
     def __init__(self):
 
         try:
-            assert(len(State.query.all()))
+            assert(len(State.query.filter_by(origin=self).all()))
         except Exception:
             State(
                 origin=self,
