@@ -258,8 +258,12 @@ class RogersAgent(Agent):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_agent"}
 
-    @property
-    def fitness(self):
+    def calculate_fitness(self):
+
+        if self.fitness is not None:
+            print "You are calculating the fitness of agent {}, ".format(self.uuid) +\
+                "but they already have a fitness"
+
         state = State\
             .query\
             .order_by(desc(Info.creation_time))\
@@ -274,12 +278,12 @@ class RogersAgent(Agent):
         is_asocial = (self.learning_gene.contents == "asocial")
 
         e = 2
-
         b = 20
         c = 9
         baseline = 10
 
-        return (baseline + matches_environment * b - is_asocial * c) ** e
+        self.fitness = (
+            baseline + matches_environment * b - is_asocial * c) ** e
 
     @property
     def learning_gene(self):
@@ -350,6 +354,8 @@ class RogersAgent(Agent):
             # else:
             #     raise ValueError(
             #         "{} can't update on {}s".format(self, type(info_in)))
+            #
+            # self.calcutlate_fitness()
 
 
 class RogersAgentFounder(RogersAgent):
