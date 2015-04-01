@@ -127,7 +127,7 @@ var StroopExperiment = function() {
 						console.log("ping");
 						$("#more-blue").removeClass('disabled');
 						$("#more-yellow").removeClass('disabled');
-					}, 500);
+					}, 2000);
 
 			     	$("#stimulus-stage").show();
 					$("#response-form").hide();

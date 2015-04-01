@@ -4,7 +4,7 @@ from wallace.agents import Agent
 from wallace.environments import Environment
 from wallace.experiments import Experiment
 from wallace.information import Gene, Meme, State
-from wallace.models import Info, Vector, Transmission
+from wallace.models import Info
 from wallace.networks import Network
 from wallace.processes import Process
 from wallace.recruiters import PsiTurkRecruiter
@@ -17,10 +17,6 @@ from sqlalchemy import desc
 
 class LearningGene(Gene):
     __mapper_args__ = {"polymorphic_identity": "learning_gene"}
-
-
-class MutationGene(Gene):
-    __mapper_args__ = {"polymorphic_identity": "mutation_gene"}
 
 
 class RogersExperiment(Experiment):
@@ -309,7 +305,7 @@ class RogersAgent(Agent):
 
     def mutate(self, info_in):
         # If mutation is happening...
-        if random.random() < 1:
+        if random.random() < 0.50:
 
             # Create a new info based on the old one.
             strats = ["social", "asocial"]
@@ -328,38 +324,8 @@ class RogersAgent(Agent):
     def update(self, infos):
         for info_in in infos:
 
-            if isinstance(info_in, MutationGene):
-                self.replicate(info_in)
-
-            elif isinstance(info_in, LearningGene):
+            if isinstance(info_in, LearningGene):
                 self.mutate(info_in)
-
-            # elif isinstance(info_in, Meme):
-            #     self.replicate(info_in)
-
-            # elif isinstance(info_in, State):
-            #     if random.random() < 1:
-            #         # Observe the environment cleanly.
-            #         info_out = Meme(origin=self, contents=info_in.contents)
-            #         SuccessfulObservation(
-            #             info_out=info_out,
-            #             info_in=info_in,
-            #             node=self)
-
-            #     else:
-            #         # Flip the bit.
-            #         new_observation = str(info_in.contents != "True")
-            #         info_out = Meme(origin=self, contents=new_observation)
-            #         FailedObservation(
-            #             info_out=info_out,
-            #             info_in=info_in,
-            #             node=self)
-
-            # else:
-            #     raise ValueError(
-            #         "{} can't update on {}s".format(self, type(info_in)))
-            #
-            # self.calcutlate_fitness()
 
 
 class RogersAgentFounder(RogersAgent):
