@@ -74,6 +74,7 @@ class RogersExperiment(Experiment):
     def information_creation_trigger(self, info):
 
         agent = info.origin
+        agent.calculate_fitness()
         self.session.add(agent)
         self.session.commit()
 
@@ -177,6 +178,7 @@ class RogersNetwork(Network):
             min_previous_generation = (newcomer_generation-1)*self.num_agents_per_generation
             previous_generation_agents = Agent\
                 .query\
+                .filter(Agent.network == newcomer.network)\
                 .filter(Agent.status != "failed")\
                 .order_by(Agent.creation_time)[min_previous_generation:(min_previous_generation+self.num_agents_per_generation)]
 
@@ -226,7 +228,7 @@ class RogersNetworkProcess(Process):
             print [p for p in potential_parents]
 
             # potential_parents = self.network.agents_of_generation(current_generation-1)
-            potential_parent_fitnesses = [p.get_fitness() for p in potential_parents]
+            potential_parent_fitnesses = [p.fitness for p in potential_parents]
 
             potential_parent_probabilities = [(f/(1.0*sum(potential_parent_fitnesses))) for f in potential_parent_fitnesses]
             # print ["%.2f" % (p,) for p in potential_parent_probabilities]
@@ -259,10 +261,6 @@ class RogersNetworkProcess(Process):
 class RogersAgent(Agent):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_agent"}
-
-    def get_fitness(self):
-        self.calculate_fitness()
-        return self.fitness
 
     def calculate_fitness(self):
 

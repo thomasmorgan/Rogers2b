@@ -80,8 +80,8 @@ class TestNetworks(object):
 
         net = exp.networks[0]
 
-        f = []
-        p = []
+        # f = []
+        # p = []
 
         for i in range(net.num_generations):
             for j in range(net.num_agents_per_generation):
@@ -90,10 +90,7 @@ class TestNetworks(object):
 
                 newcomer = newcomer_type()
                 self.db.add(newcomer)
-                self.db.commit()
-
                 net.add_agent(newcomer)
-                self.db.commit()
 
                 # print newcomer.predecessors2
 
@@ -103,13 +100,13 @@ class TestNetworks(object):
 
                 # print exp.networks[0].sources[0].has_connection_to(newcomer)
                 # print exp.networks[0].sources[0].successors2
-
                 exp.process_type(net).step()
+                newcomer.calculate_fitness()
 
-            #f.append(net.average_fitness(generation=i))
-            #p.append(net.proportion_social_learners(generation=i))
+            # f.append(net.average_fitness(generation=i))
+            # p.append(net.proportion_social_learners(generation=i))
 
-            #print f
-            #print p
+            # print f
+            # print p
 
         self.db.commit()
