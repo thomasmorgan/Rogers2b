@@ -221,11 +221,13 @@ class RogersNetworkProcess(Process):
             parent = None
             potential_parents = newcomer.predecessors2
 
-            incoming_vectors = Vector.query.filter_by(destination=newcomer).all()
-            potential_parents = [v.origin for v in incoming_vectors if isinstance(v.origin, Agent)]
+            print potential_parents
+
+            print [p for p in potential_parents]
 
             # potential_parents = self.network.agents_of_generation(current_generation-1)
-            potential_parent_fitnesses = [p.fitness for p in potential_parents]
+            potential_parent_fitnesses = [p.get_fitness() for p in potential_parents]
+
             potential_parent_probabilities = [(f/(1.0*sum(potential_parent_fitnesses))) for f in potential_parent_fitnesses]
             # print ["%.2f" % (p,) for p in potential_parent_probabilities]
 
@@ -257,6 +259,10 @@ class RogersNetworkProcess(Process):
 class RogersAgent(Agent):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_agent"}
+
+    def get_fitness(self):
+        self.calculate_fitness()
+        return self.fitness
 
     def calculate_fitness(self):
 
