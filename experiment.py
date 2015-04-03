@@ -127,66 +127,36 @@ class RogersNetwork(Network):
     def num_agents(self):
         return self.num_agents_per_generation * self.num_generations
 
-    def proportion_social_learners(self, generation=None):
-
-        is_social_learner = [a.learning_gene.contents == "social" for a in self.agents_of_generation(generation)]
-
-        return 1.0 * sum(is_social_learner) / len(is_social_learner)
-
-    def average_fitness(self, generation=None):
-
-        fitnesses = [
-            float(a.fitness) for a in self.agents_of_generation(generation)]
-
-        return sum(fitnesses) / len(fitnesses)
-
     def first_agent(self):
         if len(self.agents) > 0:
-            return Agent\
-                .query\
-                .order_by(Agent.creation_time)\
-                .filter(Agent.status != "failed")\
-                .first()
+            return self.get_nodes(type=Agent)[0]
         else:
             return None
 
     @property
     def last_agent(self):
         if len(self.agents) > 0:
-            return Agent\
-                .query\
-                .order_by(Agent.creation_time.desc())\
-                .filter(Agent.status != "failed")\
-                .first()
+            return self.get_nodes(type=Agent)[-1]
         else:
             return None
 
     def add_agent(self, newcomer):
 
         newcomer.network = self
-        vectors = []
 
         # Place them in the network.
         if len(self.agents) <= self.num_agents_per_generation:
             self.sources[0].connect_to(newcomer)
         else:
             newcomer_generation = math.floor(((len(self.agents)-1)*1.0)/self.num_agents_per_generation)
-            min_previous_generation = (newcomer_generation-1)*self.num_agents_per_generation
-            previous_generation_agents = Agent\
-                .query\
-                .filter(Agent.network == newcomer.network)\
-                .filter(Agent.status != "failed")\
-                .order_by(Agent.creation_time)[min_previous_generation:(min_previous_generation+self.num_agents_per_generation)]
+            min_previous_generation = int((newcomer_generation-1)*self.num_agents_per_generation)
+            previous_generation_agents = self.get_nodes(type=Agent)[min_previous_generation:(min_previous_generation+self.num_agents_per_generation)]
 
-            for a in previous_generation_agents:
-                vectors.append(a.connect_to(newcomer))
+            newcomer.connect_from(previous_generation_agents)
 
         # Connect the newcomer and environment
-        environment = Environment.query.filter_by(network=self).one()
-        vectors.append(environment.connect_to(newcomer))
-
-        return vectors
-
+        self.get_nodes(type=Environment)[0].connect_to(newcomer)
+ 
     def agents_of_generation(self, generation):
         first_index = generation*self.num_agents_per_generation
         last_index = first_index+(self.num_agents_per_generation)
@@ -197,37 +167,30 @@ class RogersNetworkProcess(Process):
 
     def __init__(self, network):
         self.network = network
-        self.environment = Environment\
-            .query\
-            .filter_by(network=network)\
-            .one()
+        self.environment = self.network.get_nodes(type=Environment)[0]
+
+        # Environment\
+        #     .query\
+        #     .filter_by(network=network)\
+        #     .one()
         super(RogersNetworkProcess, self).__init__(network)
 
     def step(self, verbose=True):
 
-        current_generation = int(math.floor((len(self.network.agents)*1.0-1)/self.network.num_agents_per_generation))
+        current_generation = int(math.floor((len(self.network.get_nodes(type=Agent))*1.0-1)/self.network.num_agents_per_generation))
 
-        if (len(self.network.agents) % self.network.num_agents_per_generation) == 1:
+        if (len(self.network.get_nodes(type=Agent)) % self.network.num_agents_per_generation) == 1:
             self.environment.step()
 
-        newcomer = self.network.last_agent
+        newcomer = self.network.get_nodes(type=Agent)[-1]
 
         if (current_generation == 0):
-            self.network.sources[0].transmit(to_whom=newcomer)
-            # newcomer.receive_all()
+            self.network.get_nodes(type=Source)[0].transmit(to_whom=newcomer)
         else:
             parent = None
-            potential_parents = newcomer.predecessors2
-
-            print potential_parents
-
-            print [p for p in potential_parents]
-
-            # potential_parents = self.network.agents_of_generation(current_generation-1)
+            potential_parents = newcomer.get_upstream_nodes(type=RogersAgent)
             potential_parent_fitnesses = [p.fitness for p in potential_parents]
-
             potential_parent_probabilities = [(f/(1.0*sum(potential_parent_fitnesses))) for f in potential_parent_fitnesses]
-            # print ["%.2f" % (p,) for p in potential_parent_probabilities]
 
             rnd = random.random()
             temp = 0.0
@@ -238,16 +201,15 @@ class RogersNetworkProcess(Process):
                     break
 
             parent.transmit(what=Gene, to_whom=newcomer)
-            # newcomer.receive_all()
 
         newcomer.receive_all()
 
-        if (newcomer.learning_gene.contents == "social"):
+        if (newcomer.get_info(type=LearningGene)[0].contents == "social"):
             rnd = random.randint(0, (self.network.num_agents_per_generation-1))
             cultural_parent = potential_parents[rnd]
             cultural_parent.transmit(what=Meme, to_whom=newcomer)
             # newcomer.receive_all()
-        elif (newcomer.learning_gene.contents == "asocial"):
+        elif (newcomer.get_info(type=LearningGene)[0].contents == "asocial"):
             # Observe the environment.
             newcomer.observe(self.environment)
         else:
