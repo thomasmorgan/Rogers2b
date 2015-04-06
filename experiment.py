@@ -100,11 +100,12 @@ class RogersSource(Source):
             contents="asocial")
 
     def _what(self):
-        return LearningGene\
-            .query\
-            .filter_by(origin_uuid=self.uuid)\
-            .order_by(desc(Info.creation_time))\
-            .first()
+        return self.get_info(type=LearningGene)[-1]
+        # LearningGene\
+        #     .query\
+        #     .filter_by(origin_uuid=self.uuid)\
+        #     .order_by(desc(Info.creation_time))\
+        #     .first()
 
 
 class RogersNetwork(Network):
@@ -117,11 +118,11 @@ class RogersNetwork(Network):
 
     @property
     def num_agents_per_generation(self):
-        return 2
+        return 4
 
     @property
     def num_generations(self):
-        return 2
+        return 4
 
     @property
     def num_agents(self):
@@ -204,14 +205,16 @@ class RogersNetworkProcess(Process):
 
         newcomer.receive_all()
 
+        newcomer.observe(self.environment)
         if (newcomer.get_info(type=LearningGene)[0].contents == "social"):
             rnd = random.randint(0, (self.network.num_agents_per_generation-1))
             cultural_parent = potential_parents[rnd]
             cultural_parent.transmit(what=Meme, to_whom=newcomer)
             # newcomer.receive_all()
         elif (newcomer.get_info(type=LearningGene)[0].contents == "asocial"):
-            # Observe the environment.
-            newcomer.observe(self.environment)
+            pass
+        #     # Observe the environment.
+        #     newcomer.observe(self.environment)
         else:
             raise AssertionError("Learner gene set to non-coherent value")
 
@@ -226,19 +229,22 @@ class RogersAgent(Agent):
             print "You are calculating the fitness of agent {}, ".format(self.uuid) +\
                 "but they already have a fitness"
 
-        state = State\
-            .query\
-            .order_by(desc(Info.creation_time))\
-            .first()
+        environment = self.get_upstream_nodes(type=Environment)[0]
+        state = self.observe(environment)
+
+        # state = State\
+        #     .query\
+        #     .order_by(desc(Info.creation_time))\
+        #     .first()
 
         try:
-            matches_environment = (self.meme.contents == state.contents)
+            matches_environment = (self.get_info(type=Meme).contents == state.contents)
         except Exception, e:
             matches_environment = False
             print "Warning! Calculating the fitness of a meme-less agent!"
             print "Setting meme to wrong answer for test's sake"
-        is_asocial = (self.learning_gene.contents == "asocial")
-
+        
+        is_asocial = (self.get_info(type=LearningGene)[0].contents == "asocial")
         e = 2
         b = 20
         c = 9
@@ -247,23 +253,23 @@ class RogersAgent(Agent):
         self.fitness = (
             baseline + matches_environment * b - is_asocial * c) ** e
 
-    @property
-    def learning_gene(self):
-        gene = LearningGene\
-            .query\
-            .filter_by(origin_uuid=self.uuid)\
-            .order_by(desc(Info.creation_time))\
-            .first()
-        return gene
+    # @property
+    # def learning_gene(self):
+    #     gene = LearningGene\
+    #         .query\
+    #         .filter_by(origin_uuid=self.uuid)\
+    #         .order_by(desc(Info.creation_time))\
+    #         .first()
+    #     return gene
 
-    @property
-    def meme(self):
-        meme = Meme\
-            .query\
-            .filter_by(origin_uuid=self.uuid)\
-            .order_by(desc(Info.creation_time))\
-            .first()
-        return meme
+    # @property
+    # def meme(self):
+    #     meme = Meme\
+    #         .query\
+    #         .filter_by(origin_uuid=self.uuid)\
+    #         .order_by(desc(Info.creation_time))\
+    #         .first()
+    #     return meme
 
     def mutate(self, info_in):
         # If mutation is happening...
@@ -315,18 +321,23 @@ class RogersEnvironment(Environment):
     def __init__(self):
 
         try:
-            assert(len(State.query.filter_by(origin=self).all()))
+            assert(len(self.get_infos(type=State)))
         except Exception:
+            initial_state = random.random() < 0.5
             State(
                 origin=self,
                 origin_uuid=self.uuid,
-                contents=True)
+                contents=initial_state)
 
     def step(self):
 
         if random.random() < 0.10:
-            current_state = (self.state.contents == "True")
-            State(
+            current_state = self.get_info(type=State)[-1]
+            new_state = State(
                 origin=self,
                 origin_uuid=self.uuid,
-                contents=str(not current_state))
+                contents=str(not current_state.contents))
+            Mutation(
+                info_out=new_state,
+                info_in=current_state,
+                node=self)
