@@ -231,6 +231,7 @@ class RogersAgent(Agent):
 
         environment = self.get_upstream_nodes(type=Environment)[0]
         state = self.observe(environment)
+        self.receive(state)
 
         # state = State\
         #     .query\
