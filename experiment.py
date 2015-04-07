@@ -104,11 +104,12 @@ class RogersSource(Source):
             contents="asocial")
 
     def _what(self):
-        return LearningGene\
-            .query\
-            .filter_by(origin_uuid=self.uuid)\
-            .order_by(desc(Info.creation_time))\
-            .first()
+        return self.get_info(type=LearningGene)[-1]
+        # LearningGene\
+        #     .query\
+        #     .filter_by(origin_uuid=self.uuid)\
+        #     .order_by(desc(Info.creation_time))\
+        #     .first()
 
 
 class RogersNetwork(Network):
@@ -121,76 +122,46 @@ class RogersNetwork(Network):
 
     @property
     def num_agents_per_generation(self):
-        return 2
+        return 4
 
     @property
     def num_generations(self):
-        return 2
+        return 4
 
     @property
     def num_agents(self):
         return self.num_agents_per_generation * self.num_generations
 
-    def proportion_social_learners(self, generation=None):
-
-        is_social_learner = [a.learning_gene.contents == "social" for a in self.agents_of_generation(generation)]
-
-        return 1.0 * sum(is_social_learner) / len(is_social_learner)
-
-    def average_fitness(self, generation=None):
-
-        fitnesses = [
-            float(a.fitness) for a in self.agents_of_generation(generation)]
-
-        return sum(fitnesses) / len(fitnesses)
-
     def first_agent(self):
         if len(self.agents) > 0:
-            return Agent\
-                .query\
-                .order_by(Agent.creation_time)\
-                .filter(Agent.status != "failed")\
-                .first()
+            return self.get_nodes(type=Agent)[0]
         else:
             return None
 
     @property
     def last_agent(self):
         if len(self.agents) > 0:
-            return Agent\
-                .query\
-                .order_by(Agent.creation_time.desc())\
-                .filter(Agent.status != "failed")\
-                .first()
+            return self.get_nodes(type=Agent)[-1]
         else:
             return None
 
     def add_agent(self, newcomer):
 
         newcomer.network = self
-        vectors = []
 
         # Place them in the network.
         if len(self.agents) <= self.num_agents_per_generation:
             self.sources[0].connect_to(newcomer)
         else:
             newcomer_generation = math.floor(((len(self.agents)-1)*1.0)/self.num_agents_per_generation)
-            min_previous_generation = (newcomer_generation-1)*self.num_agents_per_generation
-            previous_generation_agents = Agent\
-                .query\
-                .filter(Agent.network == newcomer.network)\
-                .filter(Agent.status != "failed")\
-                .order_by(Agent.creation_time)[min_previous_generation:(min_previous_generation+self.num_agents_per_generation)]
+            min_previous_generation = int((newcomer_generation-1)*self.num_agents_per_generation)
+            previous_generation_agents = self.get_nodes(type=Agent)[min_previous_generation:(min_previous_generation+self.num_agents_per_generation)]
 
-            for a in previous_generation_agents:
-                vectors.append(a.connect_to(newcomer))
+            newcomer.connect_from(previous_generation_agents)
 
         # Connect the newcomer and environment
-        environment = Environment.query.filter_by(network=self).one()
-        vectors.append(environment.connect_to(newcomer))
-
-        return vectors
-
+        self.get_nodes(type=Environment)[0].connect_to(newcomer)
+ 
     def agents_of_generation(self, generation):
         first_index = generation*self.num_agents_per_generation
         last_index = first_index+(self.num_agents_per_generation)
@@ -201,37 +172,30 @@ class RogersNetworkProcess(Process):
 
     def __init__(self, network):
         self.network = network
-        self.environment = Environment\
-            .query\
-            .filter_by(network=network)\
-            .one()
+        self.environment = self.network.get_nodes(type=Environment)[0]
+
+        # Environment\
+        #     .query\
+        #     .filter_by(network=network)\
+        #     .one()
         super(RogersNetworkProcess, self).__init__(network)
 
     def step(self, verbose=True):
 
-        current_generation = int(math.floor((len(self.network.agents)*1.0-1)/self.network.num_agents_per_generation))
+        current_generation = int(math.floor((len(self.network.get_nodes(type=Agent))*1.0-1)/self.network.num_agents_per_generation))
 
-        if (len(self.network.agents) % self.network.num_agents_per_generation) == 1:
+        if (len(self.network.get_nodes(type=Agent)) % self.network.num_agents_per_generation) == 1:
             self.environment.step()
 
-        newcomer = self.network.last_agent
+        newcomer = self.network.get_nodes(type=Agent)[-1]
 
         if (current_generation == 0):
-            self.network.sources[0].transmit(to_whom=newcomer)
-            # newcomer.receive_all()
+            self.network.get_nodes(type=Source)[0].transmit(to_whom=newcomer)
         else:
             parent = None
-            potential_parents = newcomer.predecessors2
-
-            print potential_parents
-
-            print [p for p in potential_parents]
-
-            # potential_parents = self.network.agents_of_generation(current_generation-1)
+            potential_parents = newcomer.get_upstream_nodes(type=RogersAgent)
             potential_parent_fitnesses = [p.fitness for p in potential_parents]
-
             potential_parent_probabilities = [(f/(1.0*sum(potential_parent_fitnesses))) for f in potential_parent_fitnesses]
-            # print ["%.2f" % (p,) for p in potential_parent_probabilities]
 
             rnd = random.random()
             temp = 0.0
@@ -242,18 +206,19 @@ class RogersNetworkProcess(Process):
                     break
 
             parent.transmit(what=Gene, to_whom=newcomer)
-            # newcomer.receive_all()
 
         newcomer.receive_all()
 
-        if (newcomer.learning_gene.contents == "social"):
+        newcomer.observe(self.environment)
+        if (newcomer.get_info(type=LearningGene)[0].contents == "social"):
             rnd = random.randint(0, (self.network.num_agents_per_generation-1))
             cultural_parent = potential_parents[rnd]
             cultural_parent.transmit(what=Meme, to_whom=newcomer)
             # newcomer.receive_all()
-        elif (newcomer.learning_gene.contents == "asocial"):
-            # Observe the environment.
-            newcomer.observe(self.environment)
+        elif (newcomer.get_info(type=LearningGene)[0].contents == "asocial"):
+            pass
+        #     # Observe the environment.
+        #     newcomer.observe(self.environment)
         else:
             raise AssertionError("Learner gene set to non-coherent value")
 
@@ -268,19 +233,23 @@ class RogersAgent(Agent):
             print "You are calculating the fitness of agent {}, ".format(self.uuid) +\
                 "but they already have a fitness"
 
-        state = State\
-            .query\
-            .order_by(desc(Info.creation_time))\
-            .first()
+        environment = self.get_upstream_nodes(type=Environment)[0]
+        state = self.observe(environment)
+        self.receive(state)
+
+        # state = State\
+        #     .query\
+        #     .order_by(desc(Info.creation_time))\
+        #     .first()
 
         try:
-            matches_environment = (self.meme.contents == state.contents)
+            matches_environment = (self.get_info(type=Meme).contents == state.contents)
         except Exception, e:
             matches_environment = False
             print "Warning! Calculating the fitness of a meme-less agent!"
             print "Setting meme to wrong answer for test's sake"
-        is_asocial = (self.learning_gene.contents == "asocial")
-
+        
+        is_asocial = (self.get_info(type=LearningGene)[0].contents == "asocial")
         e = 2
         b = 20
         c = 9
@@ -289,23 +258,23 @@ class RogersAgent(Agent):
         self.fitness = (
             baseline + matches_environment * b - is_asocial * c) ** e
 
-    @property
-    def learning_gene(self):
-        gene = LearningGene\
-            .query\
-            .filter_by(origin_uuid=self.uuid)\
-            .order_by(desc(Info.creation_time))\
-            .first()
-        return gene
+    # @property
+    # def learning_gene(self):
+    #     gene = LearningGene\
+    #         .query\
+    #         .filter_by(origin_uuid=self.uuid)\
+    #         .order_by(desc(Info.creation_time))\
+    #         .first()
+    #     return gene
 
-    @property
-    def meme(self):
-        meme = Meme\
-            .query\
-            .filter_by(origin_uuid=self.uuid)\
-            .order_by(desc(Info.creation_time))\
-            .first()
-        return meme
+    # @property
+    # def meme(self):
+    #     meme = Meme\
+    #         .query\
+    #         .filter_by(origin_uuid=self.uuid)\
+    #         .order_by(desc(Info.creation_time))\
+    #         .first()
+    #     return meme
 
     def mutate(self, info_in):
         # If mutation is happening...
@@ -357,18 +326,23 @@ class RogersEnvironment(Environment):
     def __init__(self):
 
         try:
-            assert(len(State.query.filter_by(origin=self).all()))
+            assert(len(self.get_infos(type=State)))
         except Exception:
+            initial_state = random.random() < 0.5
             State(
                 origin=self,
                 origin_uuid=self.uuid,
-                contents=True)
+                contents=initial_state)
 
     def step(self):
 
         if random.random() < 0.10:
-            current_state = (self.state.contents == "True")
-            State(
+            current_state = self.get_info(type=State)[-1]
+            new_state = State(
                 origin=self,
                 origin_uuid=self.uuid,
-                contents=str(not current_state))
+                contents=str(not current_state.contents))
+            Mutation(
+                info_out=new_state,
+                info_in=current_state,
+                node=self)
