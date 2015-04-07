@@ -13,6 +13,9 @@ var mycounterbalance = counterbalance;  // they tell you which condition you hav
 
 // All pages to be loaded
 var pages = [
+	"instructions/instruct-1.html",
+	"instructions/instruct-2.html",
+	"instructions/instruct-3.html",
 	"instructions/instruct-ready.html",
 	"stage.html",
 	"postquestionnaire.html"
@@ -21,7 +24,10 @@ var pages = [
 psiTurk.preloadPages(pages);
 
 var instructionPages = [ // add as a list as many pages as you like
-	"instructions/instruct-ready.html"
+	"instructions/instruct-1.html",
+	"instructions/instruct-2.html",
+	"instructions/instruct-3.html",
+	"instructions/instruct-ready.html",
 ];
 
 
@@ -39,6 +45,8 @@ var instructionPages = [ // add as a list as many pages as you like
 * STROOP TEST       *
 ********************/
 var StroopExperiment = function() {
+
+    trial = 0;
 
 	// Load the stage.html snippet into the body of the page
 	psiTurk.showPage('stage.html');
@@ -102,6 +110,9 @@ var StroopExperiment = function() {
 		    method: 'get',
 		    type: 'json',
 		  	success: function (resp) {
+
+                trial = trial + 1;
+                $("#trial-number").html(trial);
 
 		  		// Show the participant the stimulus.
 		  		if (learning_strategy == "asocial") {
