@@ -25,7 +25,8 @@ class RogersExperiment(Experiment):
         super(RogersExperiment, self).__init__(session)
 
         self.task = "Rogers network game"
-        self.num_repeats = 4
+        self.num_repeats_experiment = 4
+        self.num_repeats_practice = 2
         self.network_type = RogersNetwork
         self.environment_type = RogersEnvironment
         self.process_type = RogersNetworkProcess
@@ -35,7 +36,7 @@ class RogersExperiment(Experiment):
         # exist.
         self.networks = Network.query.all()
         if not self.networks:
-            for i in range(self.num_repeats):
+            for i in range(self.num_repeats_experiment + self.num_repeats_practice):
                 net = self.network_type()
                 self.session.add(net)
         self.networks = Network.query.all()
@@ -83,6 +84,9 @@ class RogersExperiment(Experiment):
 
     def is_network_full(self, network):
         return len(network.agents) >= network.num_agents
+
+    def compute_bonus(self, participant_uuid):
+        return 1
 
 
 class RogersSource(Source):
