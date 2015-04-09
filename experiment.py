@@ -242,11 +242,6 @@ class RogersAgent(Agent):
         #     .order_by(desc(Info.creation_time))\
         #     .first()
 
-        try:
-        except Exception, e:
-            matches_environment = False
-            print "Warning! Calculating the fitness of a meme-less agent!"
-            print "Setting meme to wrong answer for test's sake"
         matches_environment = (self.get_info(type=Meme)[0].contents == state.contents)
         
         is_asocial = (self.get_info(type=LearningGene)[0].contents == "asocial")
