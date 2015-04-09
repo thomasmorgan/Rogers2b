@@ -30,6 +30,8 @@ var instructionPages = [ // add as a list as many pages as you like
 	"instructions/instruct-ready.html",
 ];
 
+var num_practice_trials = 5;
+
 
 /********************
 * HTML manipulation
@@ -113,6 +115,12 @@ var StroopExperiment = function() {
 
                 trial = trial + 1;
                 $("#trial-number").html(trial);
+                if (trial <= num_practice_trials) {
+                	$("#practice-trial").html("This is a practice trial");
+                } else {
+                	$("#practice-trial").html("This is NOT a practice-trial");
+                }
+
 
 		  		// Show the participant the stimulus.
 		  		if (learning_strategy == "asocial") {
