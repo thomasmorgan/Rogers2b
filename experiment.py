@@ -104,7 +104,7 @@ class RogersSource(Source):
             contents="asocial")
 
     def _what(self):
-        return self.get_info(type=LearningGene)[-1]
+        return self.get_infos(type=LearningGene)[-1]
         # LearningGene\
         #     .query\
         #     .filter_by(origin_uuid=self.uuid)\
@@ -209,12 +209,12 @@ class RogersNetworkProcess(Process):
 
         newcomer.receive_all()
 
-        if (newcomer.get_info(type=LearningGene)[0].contents == "social"):
+        if (newcomer.get_infos(type=LearningGene)[0].contents == "social"):
             rnd = random.randint(0, (self.network.num_agents_per_generation-1))
             cultural_parent = potential_parents[rnd]
             cultural_parent.transmit(what=Meme, to_whom=newcomer)
             # newcomer.receive_all()
-        elif (newcomer.get_info(type=LearningGene)[0].contents == "asocial"):
+        elif (newcomer.get_infos(type=LearningGene)[0].contents == "asocial"):
             newcomer.observe(self.environment)
         #     # Observe the environment.
         #     newcomer.observe(self.environment)
@@ -241,9 +241,9 @@ class RogersAgent(Agent):
         #     .order_by(desc(Info.creation_time))\
         #     .first()
 
-        matches_environment = (self.get_info(type=Meme)[0].contents == state.contents)
+        matches_environment = (self.get_infos(type=Meme)[0].contents == state.contents)
         
-        is_asocial = (self.get_info(type=LearningGene)[0].contents == "asocial")
+        is_asocial = (self.get_infos(type=LearningGene)[0].contents == "asocial")
         e = 2
         b = 20
         c = 9
@@ -331,7 +331,7 @@ class RogersEnvironment(Environment):
     def step(self):
 
         if random.random() < 0.10:
-            current_state = self.get_info(type=State)[-1]
+            current_state = self.get_infos(type=State)[-1]
             new_state = State(
                 origin=self,
                 origin_uuid=self.uuid,

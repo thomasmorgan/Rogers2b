@@ -1,5 +1,5 @@
 from wallace import networks, agents, db, sources, information, models, environments
-from experiment import RogersNetwork, RogersNetworkProcess, RogersSource, RogersAgent, RogersAgentFounder, RogersEnvironment, RogersExperiment
+from experiment import RogersNetwork, RogersNetworkProcess, RogersSource, RogersAgent, RogersAgentFounder, RogersEnvironment, RogersExperiment, LearningGene
 
 
 class TestNetworks(object):
@@ -87,10 +87,9 @@ class TestNetworks(object):
     #         net.add_agent(agent)
     #         process.step()
 
-    def test_agent_type(self):
+    def test_rogers_process(self):
 
         exp = RogersExperiment(self.db)
-
         net = exp.networks[0]
 
         for i in range(net.num_generations):
@@ -101,7 +100,21 @@ class TestNetworks(object):
                 self.db.add(newcomer)
                 net.add_agent(newcomer)
                 exp.process_type(net).step()
+            
+                assert len(newcomer.get_transmissions(type="incoming", status="pending")) == 1
+                gene = newcomer.get_infos(type=LearningGene)[0].contents
+                if gene == "asocial":
+                    assert isinstance(newcomer.get_transmissions(type="incoming", status="pending")[-1].info, information.State)
+                else:
+                    assert isinstance(newcomer.get_transmissions(type="incoming", status="pending")[-1].info, information.Meme)
+
                 newcomer.receive_all()
+
+                information.Meme(
+                origin=newcomer,
+                origin_uuid=newcomer.uuid,
+                contents=1)
                 newcomer.calculate_fitness()
 
         self.db.commit()
+
