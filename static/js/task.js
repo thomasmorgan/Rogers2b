@@ -125,7 +125,7 @@ var StroopExperiment = function() {
 		  		// Show the participant the stimulus.
 		  		if (learning_strategy == "asocial") {
 
-		  			$("#instructions").text("Are there more blue or yellow dots?")
+		  			$("#instructions").text("Are there more blue or yellow dots?");
 
 			     	state = resp.contents;
 
@@ -146,6 +146,7 @@ var StroopExperiment = function() {
 						console.log("ping");
 						$("#more-blue").removeClass('disabled');
 						$("#more-yellow").removeClass('disabled');
+						lock = false;
 					}, 2000);
 
 			     	$("#stimulus-stage").show();
@@ -181,50 +182,71 @@ var StroopExperiment = function() {
 	// 	$("#submit-response").removeClass('disabled');
 	// });
 
-	$("#more-blue").click(function() {
+	reportBlue = function () {
+		if(lock === false) {
+			$("#more-blue").addClass('disabled');
+			$("#more-blue").html('Sending...');
+			$("#reproduction").val("");
 
-		$("#more-blue").addClass('disabled');
-		$("#more-blue").html('Sending...');
-		$("#reproduction").val("");
+			reqwest({
+			    url: "/information",
+			  	method: 'post',
+			  	data: {
+			  		origin_uuid: agent_uuid,
+			  		contents: "0",
+			  		info_type: "meme"
+			  	},
+			  	success: function (resp) {
+			  		$("#more-blue").removeClass('disabled');
+			  		$("#more-blue").blur();
+			  		$("#more-blue").html('Blue');
+			  		createAgent();
+			  	}
+			});
+			lock = true;
+		}
+	};
 
-		reqwest({
-		    url: "/information",
-		  	method: 'post',
-		  	data: {
-		  		origin_uuid: agent_uuid,
-		  		contents: "0",
-		  		info_type: "meme"
-		  	},
-		  	success: function (resp) {
-		  		$("#more-blue").removeClass('disabled');
-		  		$("#more-blue").blur();
-		  		$("#more-blue").html('Blue');
-		  		createAgent();
-		  	}
-		});
+	reportYellow = function () {
+		if(lock === false) {
+			$("#more-yellow").addClass('disabled');
+			$("#more-yellow").html('Sending...');
+			$("#reproduction").val("");
+
+			reqwest({
+			    url: "/information",
+			  	method: 'post',
+			  	data: {
+			  		origin_uuid: agent_uuid,
+			  		contents: "1",
+			  		info_type: "meme"
+			  	},
+			  	success: function (resp) {
+			  		$("#more-yellow").removeClass('disabled');
+			  		$("#more-yellow").blur();
+			  		$("#more-yellow").html('Yellow');
+			  		createAgent();
+			  	}
+			});
+			lock = true;
+		}
+	};
+
+	$(document).keydown(function(e) {
+		var code = e.keyCode || e.which;
+		if(code == 70) { //Enter keycode
+			reportBlue();
+		} else if (code == 74) {
+		  	reportYellow();
+		}
 	});
 
 	$("#more-yellow").click(function() {
+		reportYellow();
+	});
 
-		$("#more-yellow").addClass('disabled');
-		$("#more-yellow").html('Sending...');
-		$("#reproduction").val("");
-
-		reqwest({
-		    url: "/information",
-		  	method: 'post',
-		  	data: {
-		  		origin_uuid: agent_uuid,
-		  		contents: "1",
-		  		info_type: "meme"
-		  	},
-		  	success: function (resp) {
-		  		$("#more-yellow").removeClass('disabled');
-		  		$("#more-yellow").blur();
-		  		$("#more-yellow").html('Yellow');
-		  		createAgent();
-		  	}
-		});
+	$("#more-blue").click(function() {
+		reportBlue();
 	});
 };
 
