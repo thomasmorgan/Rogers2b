@@ -209,14 +209,13 @@ class RogersNetworkProcess(Process):
 
         newcomer.receive_all()
 
-        newcomer.observe(self.environment)
         if (newcomer.get_info(type=LearningGene)[0].contents == "social"):
             rnd = random.randint(0, (self.network.num_agents_per_generation-1))
             cultural_parent = potential_parents[rnd]
             cultural_parent.transmit(what=Meme, to_whom=newcomer)
             # newcomer.receive_all()
         elif (newcomer.get_info(type=LearningGene)[0].contents == "asocial"):
-            pass
+            newcomer.observe(self.environment)
         #     # Observe the environment.
         #     newcomer.observe(self.environment)
         else:
