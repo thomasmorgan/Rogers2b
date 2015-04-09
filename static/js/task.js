@@ -118,7 +118,7 @@ var StroopExperiment = function() {
                 if (trial <= num_practice_trials) {
                 	$("#practice-trial").html("This is a practice trial");
                 } else {
-                	$("#practice-trial").html("This is NOT a practice-trial");
+                	$("#practice-trial").html("This is NOT a practice trial");
                 }
 
 
@@ -157,11 +157,14 @@ var StroopExperiment = function() {
 		  		// Show the participant the hint.
 		  		if (learning_strategy == "social") {
 			     	meme = resp.contents;
+			     	$("#instructions").html("Are there more blue or yellow dots?");
 			     	if (meme == "0") {
-			     		$("#instructions").html("Someone else looked at the display and decided that there are more <em>blue dots</em>. Are there more blue or yellow dots?");
+			     		$("#stimulus").attr("src", "/static/images/blue_social.jpg");
 			     	} else if (meme == "1") {
-			     		$("#instructions").html("Someone else looked at the display and decided that there are more <em>yellow dots</em>. Are there more blue or yellow dots?");
+						$("#stimulus").attr("src", "/static/images/yellow_social.jpg");
 			     	}
+			     	$("#stimulus").show();
+			     	$("#stimulus").show();
 		  		}
 		    },
 		    error: function (err) {
