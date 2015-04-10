@@ -42,11 +42,13 @@ class RogersExperiment(Experiment):
         self.networks = Network.query.all()
 
         # Setup for first time experiment is accessed
-        for net in self.networks:
+        self.proportions = [0.6,0.7,0.8] * int((self.num_repeats_experiment + self.num_repeats_practice)/3)
+        for i in range(self.networks):
+            net = self.networks[i]
             if not net.sources:
                 source = RogersSource()
                 self.session.add(source)
-                environment = RogersEnvironment()
+                environment = RogersEnvironment(proportion=self.proportions[i])
                 environment.network = net
                 self.session.add(environment)
                 self.session.commit()
@@ -312,16 +314,17 @@ class RogersEnvironment(Environment):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_environment"}
 
-    def __init__(self):
+    def __init__(self, proportion=None):
 
-        try:
-            assert(len(self.get_infos(type=State)))
-        except Exception:
-            initial_state = random.random() < 0.5
-            State(
-                origin=self,
-                origin_uuid=self.uuid,
-                contents=initial_state)
+        # try:
+        #     assert(len(self.get_infos(type=State)))
+        # except Exception:
+        if random.random() < 0.5:
+            proportion = 1 - proportion
+        State(
+            origin=self,
+            origin_uuid=self.uuid,
+            contents=proportion)
 
     def step(self):
 
@@ -330,7 +333,7 @@ class RogersEnvironment(Environment):
             new_state = State(
                 origin=self,
                 origin_uuid=self.uuid,
-                contents=str(not current_state.contents))
+                contents=str(1 - current_state.contents))
             Mutation(
                 info_out=new_state,
                 info_in=current_state,
