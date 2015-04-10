@@ -85,8 +85,11 @@ class RogersExperiment(Experiment):
     def is_network_full(self, network):
         return len(network.agents) >= network.num_agents
 
-    def compute_bonus(self, participant_uuid):
-        return 1
+    def bonus(self, participant_uuid=None):
+        nodes_lists = [net.nodes_of_participant(participant_uuid) for net in self.networks[self.num_repeats_practice:]]
+        nodes = [node for sublist in nodes_lists for node in sublist]
+        score = [node.score() for node in nodes]
+        return (float(sum(score))/float(len(score)))*10.00
 
 
 class RogersSource(Source):
@@ -252,23 +255,10 @@ class RogersAgent(Agent):
         self.fitness = (
             baseline + matches_environment * b - is_asocial * c) ** e
 
-    # @property
-    # def learning_gene(self):
-    #     gene = LearningGene\
-    #         .query\
-    #         .filter_by(origin_uuid=self.uuid)\
-    #         .order_by(desc(Info.creation_time))\
-    #         .first()
-    #     return gene
-
-    # @property
-    # def meme(self):
-    #     meme = Meme\
-    #         .query\
-    #         .filter_by(origin_uuid=self.uuid)\
-    #         .order_by(desc(Info.creation_time))\
-    #         .first()
-    #     return meme
+    def score(self):
+        meme = self.get_infos(type=Meme)[0]
+        state = self.get_upstream_nodes(type=Environment)[0].state(time=meme.creation_time)
+        return meme.contents == state.contents
 
     def mutate(self, info_in):
         # If mutation is happening...
