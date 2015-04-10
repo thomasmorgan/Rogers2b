@@ -85,7 +85,7 @@ class RogersExperiment(Experiment):
     def is_network_full(self, network):
         return len(network.agents) >= network.num_agents
 
-    def compute_bonus(self, participant_uuid):
+    def bonus(self, participant_uuid=None):
         return 1
 
 
