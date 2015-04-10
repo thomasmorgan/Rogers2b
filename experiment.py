@@ -86,10 +86,15 @@ class RogersExperiment(Experiment):
         return len(network.agents) >= network.num_agents
 
     def bonus(self, participant_uuid=None):
-        nodes_lists = [net.nodes_of_participant(participant_uuid) for net in self.networks[self.num_repeats_practice:]]
-        nodes = [node for sublist in nodes_lists for node in sublist]
-        score = [node.score() for node in nodes]
-        return (float(sum(score))/float(len(score)))*10.00
+        if participant_uuid is not None:
+            nodes_lists = [net.nodes_of_participant(participant_uuid) for net in self.networks[self.num_repeats_practice:]]
+            nodes = [node for sublist in nodes_lists for node in sublist]
+            if len(nodes) == 0:
+                raise(ValueError("Cannot calculate bonus of participant_uuid {} as there are no nodes associated with this uuid".format(participant_uuid)))
+            score = [node.score() for node in nodes]
+            return (float(sum(score))/float(len(score)))*10.00
+        else:
+            raise(ValueError("You must specify the participant_uuid to calculate the bonus."))
 
 
 class RogersSource(Source):
