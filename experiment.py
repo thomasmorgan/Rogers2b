@@ -169,7 +169,7 @@ class RogersNetwork(Network):
 
         # Connect the newcomer and environment
         self.get_nodes(type=Environment)[0].connect_to(newcomer)
- 
+
     def agents_of_generation(self, generation):
         first_index = generation*self.num_agents_per_generation
         last_index = first_index+(self.num_agents_per_generation)
@@ -250,7 +250,7 @@ class RogersAgent(Agent):
         #     .first()
 
         matches_environment = (self.get_infos(type=Meme)[0].contents == state.contents)
-        
+
         is_asocial = (self.get_infos(type=LearningGene)[0].contents == "asocial")
         e = 2
         b = 20
