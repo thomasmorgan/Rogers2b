@@ -29,7 +29,7 @@ class TestNetworks(object):
         self.db.add(source)
         source.create_information()
 
-        environment = RogersEnvironment()
+        environment = RogersEnvironment(proportion  = 0.8)
         net.add(environment)
         self.db.add(environment)
 

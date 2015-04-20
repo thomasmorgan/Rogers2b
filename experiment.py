@@ -319,7 +319,9 @@ class RogersEnvironment(Environment):
         # try:
         #     assert(len(self.get_infos(type=State)))
         # except Exception:
-        if random.random() < 0.5:
+        if proportion is None:
+            raise(ValueError("You need to pass RogersEnvironment a proprtion when you make it."))
+        elif random.random() < 0.5:
             proportion = 1 - proportion
         State(
             origin=self,
