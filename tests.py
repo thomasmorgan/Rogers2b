@@ -81,7 +81,8 @@ class TestNetworks(object):
     #     # Add a source.
     #     source = RogersSource()
     #     source.create_information()
-    #     net.add_source_global(source)
+    #     net.add(source)
+    #     source.connect_to(net.agents)
 
     #     for i in range(n):
     #         if i < apg:

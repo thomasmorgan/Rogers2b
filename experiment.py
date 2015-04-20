@@ -43,7 +43,7 @@ class RogersExperiment(Experiment):
 
         # Setup for first time experiment is accessed
         self.proportions = [0.6,0.7,0.8] * int((self.num_repeats_experiment + self.num_repeats_practice)/3)
-        for i in range(self.networks):
+        for i in range(len(self.networks)):
             net = self.networks[i]
             if not net.sources:
                 source = RogersSource()
@@ -52,7 +52,7 @@ class RogersExperiment(Experiment):
                 environment.network = net
                 self.session.add(environment)
                 self.session.commit()
-                net.add_source(source)
+                net.add(source)
                 source.create_information()
                 self.session.commit()
 
