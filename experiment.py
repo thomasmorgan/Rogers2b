@@ -1,14 +1,12 @@
 """Replicate Rogers' paradox by simulating evolution with people."""
 
-from wallace.agents import Agent
 from wallace.environments import Environment
 from wallace.experiments import Experiment
 from wallace.information import Gene, Meme, State
-from wallace.models import Info
+from wallace.models import Info, Source, Agent
 from wallace.networks import Network
 from wallace.processes import Process
 from wallace.recruiters import PsiTurkRecruiter
-from wallace.sources import Source
 from wallace.transformations import Mutation, Observation
 import math
 import random
@@ -45,7 +43,7 @@ class RogersExperiment(Experiment):
         self.proportions = [0.6,0.7,0.8] * int((self.num_repeats_experiment + self.num_repeats_practice)/3)
         for i in range(len(self.networks)):
             net = self.networks[i]
-            if not net.sources:
+            if not net.nodes(type=Source):
                 source = RogersSource()
                 self.session.add(source)
                 environment = RogersEnvironment(proportion=self.proportions[i])
@@ -57,7 +55,7 @@ class RogersExperiment(Experiment):
                 self.session.commit()
 
     def agent_type_generator(self, network=None):
-        if len(network.agents) < network.num_agents_per_generation:
+        if len(network.nodes(type=Agent)) < network.num_agents_per_generation:
             return RogersAgentFounder
         else:
             return RogersAgent
@@ -85,7 +83,7 @@ class RogersExperiment(Experiment):
             self.recruiter().recruit_new_participants(self, n=1)
 
     def is_network_full(self, network):
-        return len(network.agents) >= network.num_agents
+        return len(network.nodes(type=Agent)) >= network.num_agents
 
     def bonus(self, participant_uuid=None):
         if participant_uuid is not None:
@@ -114,7 +112,7 @@ class RogersSource(Source):
             contents="asocial")
 
     def _what(self):
-        return self.get_infos(type=LearningGene)[-1]
+        return self.infos(type=LearningGene)[-1]
         # LearningGene\
         #     .query\
         #     .filter_by(origin_uuid=self.uuid)\
@@ -143,15 +141,15 @@ class RogersNetwork(Network):
         return self.num_agents_per_generation * self.num_generations
 
     def first_agent(self):
-        if len(self.agents) > 0:
-            return self.get_nodes(type=Agent)[0]
+        if len(self.nodes(type=Agent)) > 0:
+            return self.nodes(type=Agent)[0]
         else:
             return None
 
     @property
     def last_agent(self):
-        if len(self.agents) > 0:
-            return self.get_nodes(type=Agent)[-1]
+        if len(self.nodes(type=Agent)) > 0:
+            return self.nodes(type=Agent)[-1]
         else:
             return None
 
@@ -160,29 +158,29 @@ class RogersNetwork(Network):
         newcomer.network = self
 
         # Place them in the network.
-        if len(self.agents) <= self.num_agents_per_generation:
-            self.sources[0].connect_to(newcomer)
+        if len(self.nodes(type=Agent)) <= self.num_agents_per_generation:
+            self.nodes(type=Source)[0].connect_to(newcomer)
         else:
-            newcomer_generation = math.floor(((len(self.agents)-1)*1.0)/self.num_agents_per_generation)
+            newcomer_generation = math.floor(((len(self.nodes(type=Agent))-1)*1.0)/self.num_agents_per_generation)
             min_previous_generation = int((newcomer_generation-1)*self.num_agents_per_generation)
-            previous_generation_agents = self.get_nodes(type=Agent)[min_previous_generation:(min_previous_generation+self.num_agents_per_generation)]
+            previous_generation_agents = self.nodes(type=Agent)[min_previous_generation:(min_previous_generation+self.num_agents_per_generation)]
 
             newcomer.connect_from(previous_generation_agents)
 
         # Connect the newcomer and environment
-        self.get_nodes(type=Environment)[0].connect_to(newcomer)
+        self.nodes(type=Environment)[0].connect_to(newcomer)
 
     def agents_of_generation(self, generation):
         first_index = generation*self.num_agents_per_generation
         last_index = first_index+(self.num_agents_per_generation)
-        return self.agents[first_index:last_index]
+        return self.nodes(type=Agent)[first_index:last_index]
 
 
 class RogersNetworkProcess(Process):
 
     def __init__(self, network):
         self.network = network
-        self.environment = self.network.get_nodes(type=Environment)[0]
+        self.environment = self.network.nodes(type=Environment)[0]
 
         # Environment\
         #     .query\
@@ -192,18 +190,18 @@ class RogersNetworkProcess(Process):
 
     def step(self, verbose=True):
 
-        current_generation = int(math.floor((len(self.network.get_nodes(type=Agent))*1.0-1)/self.network.num_agents_per_generation))
+        current_generation = int(math.floor((len(self.network.nodes(type=Agent))*1.0-1)/self.network.num_agents_per_generation))
 
-        if (len(self.network.get_nodes(type=Agent)) % self.network.num_agents_per_generation) == 1:
+        if (len(self.network.nodes(type=Agent)) % self.network.num_agents_per_generation) == 1:
             self.environment.step()
 
-        newcomer = self.network.get_nodes(type=Agent)[-1]
+        newcomer = self.network.nodes(type=Agent)[-1]
 
         if (current_generation == 0):
-            self.network.get_nodes(type=Source)[0].transmit(to_whom=newcomer)
+            self.network.nodes(type=Source)[0].transmit(to_whom=newcomer)
         else:
             parent = None
-            potential_parents = newcomer.get_upstream_nodes(type=RogersAgent)
+            potential_parents = newcomer.upstream_nodes(type=RogersAgent)
             potential_parent_fitnesses = [p.fitness for p in potential_parents]
             potential_parent_probabilities = [(f/(1.0*sum(potential_parent_fitnesses))) for f in potential_parent_fitnesses]
 
@@ -219,12 +217,12 @@ class RogersNetworkProcess(Process):
 
         newcomer.receive_all()
 
-        if (newcomer.get_infos(type=LearningGene)[0].contents == "social"):
+        if (newcomer.infos(type=LearningGene)[0].contents == "social"):
             rnd = random.randint(0, (self.network.num_agents_per_generation-1))
             cultural_parent = potential_parents[rnd]
             cultural_parent.transmit(what=Meme, to_whom=newcomer)
             # newcomer.receive_all()
-        elif (newcomer.get_infos(type=LearningGene)[0].contents == "asocial"):
+        elif (newcomer.infos(type=LearningGene)[0].contents == "asocial"):
             newcomer.observe(self.environment)
         #     # Observe the environment.
         #     newcomer.observe(self.environment)
@@ -242,7 +240,7 @@ class RogersAgent(Agent):
             print "You are calculating the fitness of agent {}, ".format(self.uuid) +\
                 "but they already have a fitness"
 
-        environment = self.get_upstream_nodes(type=Environment)[0]
+        environment = self.upstream_nodes(type=Environment)[0]
         state = self.observe(environment)
         self.receive(state)
 
@@ -251,9 +249,9 @@ class RogersAgent(Agent):
         #     .order_by(desc(Info.creation_time))\
         #     .first()
 
-        matches_environment = (self.get_infos(type=Meme)[0].contents == state.contents)
+        matches_environment = (self.infos(type=Meme)[0].contents == state.contents)
 
-        is_asocial = (self.get_infos(type=LearningGene)[0].contents == "asocial")
+        is_asocial = (self.infos(type=LearningGene)[0].contents == "asocial")
         e = 2
         b = 20
         c = 9
@@ -263,8 +261,8 @@ class RogersAgent(Agent):
             baseline + matches_environment * b - is_asocial * c) ** e
 
     def score(self):
-        meme = self.get_infos(type=Meme)[0]
-        state = self.get_upstream_nodes(type=Environment)[0].state(time=meme.creation_time)
+        meme = self.infos(type=Meme)[0]
+        state = self.upstream_nodes(type=Environment)[0].state(time=meme.creation_time)
         return meme.contents == state.contents
 
     def mutate(self, info_in):
@@ -317,7 +315,7 @@ class RogersEnvironment(Environment):
     def __init__(self, proportion=None):
 
         # try:
-        #     assert(len(self.get_infos(type=State)))
+        #     assert(len(self.infos(type=State)))
         # except Exception:
         if proportion is None:
             raise(ValueError("You need to pass RogersEnvironment a proprtion when you make it."))
@@ -331,11 +329,11 @@ class RogersEnvironment(Environment):
     def step(self):
 
         if random.random() < 0.10:
-            current_state = self.get_infos(type=State)[-1]
+            current_state = self.infos(type=State)[-1]
             new_state = State(
                 origin=self,
                 origin_uuid=self.uuid,
-                contents=str(1 - current_state.contents))
+                contents=str(1 - float(current_state.contents)))
             Mutation(
                 info_out=new_state,
                 info_in=current_state,
