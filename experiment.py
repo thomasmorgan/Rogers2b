@@ -40,19 +40,18 @@ class RogersExperiment(Experiment):
         self.networks = Network.query.all()
 
         # Setup for first time experiment is accessed
-        self.proportions = [0.6,0.7,0.8] * int((self.num_repeats_experiment + self.num_repeats_practice)/3)
+        self.proportions = [0.6, 0.7, 0.8] * int((self.num_repeats_experiment + self.num_repeats_practice)/3)
         for i in range(len(self.networks)):
             net = self.networks[i]
             if not net.nodes(type=Source):
                 source = RogersSource()
                 self.session.add(source)
                 environment = RogersEnvironment(proportion=self.proportions[i])
-                environment.network = net
-                self.session.add(environment)
-                self.session.commit()
+                net.add(environment)
+                self.save(environment)
                 net.add(source)
                 source.create_information()
-                self.session.commit()
+                self.save(source)
 
     def agent_type_generator(self, network=None):
         if len(network.nodes(type=Agent)) < network.num_agents_per_generation:
@@ -72,8 +71,7 @@ class RogersExperiment(Experiment):
 
         agent = info.origin
         agent.calculate_fitness()
-        self.session.add(agent)
-        self.session.commit()
+        self.save(agent)
 
         if self.is_experiment_over():
             # If the experiment is over, stop recruiting and export the data.
@@ -106,18 +104,16 @@ class RogersSource(Source):
     """Sets up all the infos for the source to transmit. Every time it is
     called it should make a new info for each of the two genes."""
     def create_information(self):
-        LearningGene(
-            origin=self,
-            origin_uuid=self.uuid,
-            contents="asocial")
+        if len(self.infos()) > 1:
+            raise Warning("You should tell a RogersSource to create_information more than once!")
+        else:
+            LearningGene(
+                origin=self,
+                origin_uuid=self.uuid,
+                contents="asocial")
 
     def _what(self):
         return self.infos(type=LearningGene)[-1]
-        # LearningGene\
-        #     .query\
-        #     .filter_by(origin_uuid=self.uuid)\
-        #     .order_by(desc(Info.creation_time))\
-        #     .first()
 
 
 class RogersNetwork(Network):
@@ -140,22 +136,9 @@ class RogersNetwork(Network):
     def num_agents(self):
         return self.num_agents_per_generation * self.num_generations
 
-    def first_agent(self):
-        if len(self.nodes(type=Agent)) > 0:
-            return self.nodes(type=Agent)[0]
-        else:
-            return None
-
-    @property
-    def last_agent(self):
-        if len(self.nodes(type=Agent)) > 0:
-            return self.nodes(type=Agent)[-1]
-        else:
-            return None
-
     def add_agent(self, newcomer):
 
-        newcomer.network = self
+        self.add(newcomer)
 
         # Place them in the network.
         if len(self.nodes(type=Agent)) <= self.num_agents_per_generation:
@@ -181,12 +164,6 @@ class RogersNetworkProcess(Process):
     def __init__(self, network):
         self.network = network
         self.environment = self.network.nodes(type=Environment)[0]
-
-        # Environment\
-        #     .query\
-        #     .filter_by(network=network)\
-        #     .one()
-        super(RogersNetworkProcess, self).__init__(network)
 
     def step(self, verbose=True):
 
@@ -221,11 +198,8 @@ class RogersNetworkProcess(Process):
             rnd = random.randint(0, (self.network.num_agents_per_generation-1))
             cultural_parent = potential_parents[rnd]
             cultural_parent.transmit(what=Meme, to_whom=newcomer)
-            # newcomer.receive_all()
         elif (newcomer.infos(type=LearningGene)[0].contents == "asocial"):
             newcomer.observe(self.environment)
-        #     # Observe the environment.
-        #     newcomer.observe(self.environment)
         else:
             raise AssertionError("Learner gene set to non-coherent value")
 
@@ -237,17 +211,12 @@ class RogersAgent(Agent):
     def calculate_fitness(self):
 
         if self.fitness is not None:
-            print "You are calculating the fitness of agent {}, ".format(self.uuid) +\
-                "but they already have a fitness"
+            raise Exception("You are calculating the fitness of agent {}, ".format(self.uuid) +
+                            "but they already have a fitness")
 
         environment = self.upstream_nodes(type=Environment)[0]
         state = self.observe(environment)
         self.receive(state)
-
-        # state = State\
-        #     .query\
-        #     .order_by(desc(Info.creation_time))\
-        #     .first()
 
         matches_environment = (self.infos(type=Meme)[0].contents == state.contents)
 
@@ -285,7 +254,6 @@ class RogersAgent(Agent):
 
     def update(self, infos):
         for info_in in infos:
-
             if isinstance(info_in, LearningGene):
                 self.mutate(info_in)
 
@@ -314,9 +282,6 @@ class RogersEnvironment(Environment):
 
     def __init__(self, proportion=None):
 
-        # try:
-        #     assert(len(self.infos(type=State)))
-        # except Exception:
         if proportion is None:
             raise(ValueError("You need to pass RogersEnvironment a proprtion when you make it."))
         elif random.random() < 0.5:
