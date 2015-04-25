@@ -13,21 +13,21 @@ var mycounterbalance = counterbalance;  // they tell you which condition you hav
 
 // All pages to be loaded
 var pages = [
-	"instructions/instruct-1.html",
-	"instructions/instruct-2.html",
-	"instructions/instruct-3.html",
-	"instructions/instruct-ready.html",
-	"stage.html",
-	"postquestionnaire.html"
+    "instructions/instruct-1.html",
+    "instructions/instruct-2.html",
+    "instructions/instruct-3.html",
+    "instructions/instruct-ready.html",
+    "stage.html",
+    "postquestionnaire.html"
 ];
 
 psiTurk.preloadPages(pages);
 
 var instructionPages = [ // add as a list as many pages as you like
-	"instructions/instruct-1.html",
-	"instructions/instruct-2.html",
-	"instructions/instruct-3.html",
-	"instructions/instruct-ready.html",
+    "instructions/instruct-1.html",
+    "instructions/instruct-2.html",
+    "instructions/instruct-3.html",
+    "instructions/instruct-ready.html",
 ];
 
 var num_practice_trials = 5;
@@ -50,274 +50,274 @@ var StroopExperiment = function() {
 
     trial = 0;
 
-	// Load the stage.html snippet into the body of the page
-	psiTurk.showPage('stage.html');
-	$("#response-form").hide();
-	$("#finish-reading").hide();
+    // Load the stage.html snippet into the body of the page
+    psiTurk.showPage('stage.html');
+    $("#response-form").hide();
+    $("#finish-reading").hide();
 
-	// Create the agent.
-	createAgent = function() {
-		reqwest({
-		    url: "/agents",
-		    method: 'post',
-		    data: { unique_id: uniqueId },
-		    type: 'json',
-		  	success: function (resp) {
-		  		agent_uuid = resp.agents.uuid;
-		     	getAllInformation(agent_uuid);
-		    },
-		    error: function (err) {
-			  	currentview = new Questionnaire();
-		    }
-		});
-	};
+    // Create the agent.
+    createAgent = function() {
+        reqwest({
+            url: "/agents",
+            method: 'post',
+            data: { unique_id: uniqueId },
+            type: 'json',
+            success: function (resp) {
+                agent_uuid = resp.agents.uuid;
+                getAllInformation(agent_uuid);
+            },
+            error: function (err) {
+                currentview = new Questionnaire();
+            }
+        });
+    };
 
-	// Get all the infos
-	getAllInformation = function(agent_uuid) {
-		reqwest({
-		    url: "/information",
-		    method: 'get',
-		    data: { origin_uuid: agent_uuid },
-		    type: 'json',
-		  	success: function (resp) {
+    // Get all the infos
+    getAllInformation = function(agent_uuid) {
+        reqwest({
+            url: "/information",
+            method: 'get',
+            data: { origin_uuid: agent_uuid },
+            type: 'json',
+            success: function (resp) {
                 learning_strategy = resp.information[0].contents;
-             	console.log(learning_strategy);
+                console.log(learning_strategy);
                 getPendingTransmissions(agent_uuid);
-		    },
-		    error: function (err) {
-		    	console.log(err);
-		    }
-		});
-	};
+            },
+            error: function (err) {
+                console.log(err);
+            }
+        });
+    };
 
-	getPendingTransmissions = function(destination_uuid) {
-		reqwest({
-		    url: "/transmissions?destination_uuid=" + destination_uuid,
-		    method: 'get',
-		    type: 'json',
-		  	success: function (resp) {
-		  		console.log(resp);
-		  		info_uuid = resp.transmissions[0].info_uuid;
-		     	info = getInfo(info_uuid);
-		    },
-		    error: function (err) {
-		    	console.log(err);
-		    }
-		});
-	};
+    getPendingTransmissions = function(destination_uuid) {
+        reqwest({
+            url: "/transmissions?destination_uuid=" + destination_uuid,
+            method: 'get',
+            type: 'json',
+            success: function (resp) {
+                console.log(resp);
+                info_uuid = resp.transmissions[0].info_uuid;
+                info = getInfo(info_uuid);
+            },
+            error: function (err) {
+                console.log(err);
+            }
+        });
+    };
 
-	getInfo = function(uuid) {
-		reqwest({
-		    url: "/information/" + uuid,
-		    method: 'get',
-		    type: 'json',
-		  	success: function (resp) {
+    getInfo = function(uuid) {
+        reqwest({
+            url: "/information/" + uuid,
+            method: 'get',
+            type: 'json',
+            success: function (resp) {
 
                 trial = trial + 1;
                 $("#trial-number").html(trial);
                 if (trial <= num_practice_trials) {
-                	$("#practice-trial").html("This is a practice trial");
+                    $("#practice-trial").html("This is a practice trial");
                 } else {
-                	$("#practice-trial").html("This is NOT a practice trial");
+                    $("#practice-trial").html("This is NOT a practice trial");
                 }
 
 
-		  		// Show the participant the stimulus.
-		  		if (learning_strategy == "asocial") {
+                // Show the participant the stimulus.
+                if (learning_strategy == "asocial") {
 
-		  			$("#instructions").text("Are there more blue or yellow dots?");
+                    $("#instructions").text("Are there more blue or yellow dots?");
 
-			     	state = resp.contents;
+                    state = resp.contents;
 
-			     	if (state == "0") {
-			     		regenerateDisplay(75, 25);
-					} else {
-			     		regenerateDisplay(25, 75);
-					}
+                    if (state == "0") {
+                        regenerateDisplay(75, 25);
+                    } else {
+                        regenerateDisplay(25, 75);
+                    }
 
-					$("#more-blue").addClass('disabled');
-					$("#more-yellow").addClass('disabled');
+                    $("#more-blue").addClass('disabled');
+                    $("#more-yellow").addClass('disabled');
 
-					presentDisplay();
+                    presentDisplay();
 
-			     	$("#stimulus-stage").show();
-					$("#response-form").hide();
-			     	$("#more-yellow").show();
-			     	$("#more-blue").show();
-		  		}
+                    $("#stimulus-stage").show();
+                    $("#response-form").hide();
+                    $("#more-yellow").show();
+                    $("#more-blue").show();
+                }
 
-		  		// Show the participant the hint.
-		  		if (learning_strategy == "social") {
-			     	meme = resp.contents;
-			     	$("#instructions").html("Are there more blue or yellow dots?");
-			     	if (meme == "0") {
-			     		$("#stimulus").attr("src", "/static/images/blue_social.jpg");
-			     	} else if (meme == "1") {
-						$("#stimulus").attr("src", "/static/images/yellow_social.jpg");
-			     	}
-			     	$("#stimulus").show();
-			     	$("#stimulus").show();
-		  		}
-		    },
-		    error: function (err) {
-		    	console.log(err);
-		    }
-		});
-	};
+                // Show the participant the hint.
+                if (learning_strategy == "social") {
+                    meme = resp.contents;
+                    $("#instructions").html("Are there more blue or yellow dots?");
+                    if (meme == "0") {
+                        $("#stimulus").attr("src", "/static/images/blue_social.jpg");
+                    } else if (meme == "1") {
+                        $("#stimulus").attr("src", "/static/images/yellow_social.jpg");
+                    }
+                    $("#stimulus").show();
+                    $("#stimulus").show();
+                }
+            },
+            error: function (err) {
+                console.log(err);
+            }
+        });
+    };
 
-	createAgent();
+    createAgent();
 
 
-	function presentDisplay (argument) {
-		for (var i = dots.length - 1; i >= 0; i--) {
-			dots[i].show();
-		}
-		setTimeout(function() {
-			for (var i = dots.length - 1; i >= 0; i--) {
-				dots[i].hide();
-			}
-			$("#more-blue").removeClass('disabled');
-			$("#more-yellow").removeClass('disabled');
-			lock = false;
-		}, 2000);
+    function presentDisplay (argument) {
+        for (var i = dots.length - 1; i >= 0; i--) {
+            dots[i].show();
+        }
+        setTimeout(function() {
+            for (var i = dots.length - 1; i >= 0; i--) {
+                dots[i].hide();
+            }
+            $("#more-blue").removeClass('disabled');
+            $("#more-yellow").removeClass('disabled');
+            lock = false;
+        }, 2000);
 
-	}
+    }
 
-	function regenerateDisplay (blueDots, yellowDots) {
+    function regenerateDisplay (blueDots, yellowDots) {
 
-		// Display parameters
-		width = 600;
-		height = 400;
-		numDots = 100;
-		dots = [];
-		sizes = [];
-		rMin = 10; // The dots' radius.
-		rMax = 20;
+        // Display parameters
+        width = 600;
+        height = 400;
+        numDots = 100;
+        dots = [];
+        sizes = [];
+        rMin = 10; // The dots' radius.
+        rMax = 20;
 
-		paper = Raphael(50, 200, width, height);
+        paper = Raphael(50, 200, width, height);
 
-		colors = [];
-		colorsRGB = ["#428bca", "#FBB829"];
+        colors = [];
+        colorsRGB = ["#428bca", "#FBB829"];
 
-		for (var i = blueDots - 1; i >= 0; i--) {
-			colors.push(0);
-		}
+        for (var i = blueDots - 1; i >= 0; i--) {
+            colors.push(0);
+        }
 
-		for (var i = yellowDots - 1; i >= 0; i--) {
-			colors.push(1);
-		}
+        for (var i = yellowDots - 1; i >= 0; i--) {
+            colors.push(1);
+        }
 
-		colors = shuffle(colors);
+        colors = shuffle(colors);
 
-		while (dots.length < numDots) {
+        while (dots.length < numDots) {
 
-			// Pick a random location for a new dot.
-			r = randi(rMin, rMax);
-			x = randi(r, width - r);
-			y = randi(r, height - r);
+            // Pick a random location for a new dot.
+            r = randi(rMin, rMax);
+            x = randi(r, width - r);
+            y = randi(r, height - r);
 
-			// Check if there is overlap with any other dots
-			pass = true;
-			for (var i = dots.length - 1; i >= 0; i--) {
-				distance = Math.sqrt(Math.pow(dots[i].attrs.cx - x, 2) + Math.pow(dots[i].attrs.cy - y, 2));
-				if (distance < (sizes[i] + r)) {
-					pass = false;
-				}
-			}
+            // Check if there is overlap with any other dots
+            pass = true;
+            for (var i = dots.length - 1; i >= 0; i--) {
+                distance = Math.sqrt(Math.pow(dots[i].attrs.cx - x, 2) + Math.pow(dots[i].attrs.cy - y, 2));
+                if (distance < (sizes[i] + r)) {
+                    pass = false;
+                }
+            }
 
-			if (pass) {
-				var dot = paper.circle(x, y, r);
-				dot.hide();
-				// use the appropriate color.
-				dot.attr("fill", colorsRGB[colors[dots.length]]); // FBB829
-				dot.attr("stroke", "#fff");
-				dots.push(dot);
-				sizes.push(r);
-			}
-		}
-	}
+            if (pass) {
+                var dot = paper.circle(x, y, r);
+                dot.hide();
+                // use the appropriate color.
+                dot.attr("fill", colorsRGB[colors[dots.length]]); // FBB829
+                dot.attr("stroke", "#fff");
+                dots.push(dot);
+                sizes.push(r);
+            }
+        }
+    }
 
-	function randi(min, max) {
-    	return Math.floor(Math.random() * (max - min + 1)) + min;
-	}
+    function randi(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
 
-	function shuffle(o){
-    	for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
-   		return o;
-	}
+    function shuffle(o){
+        for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+        return o;
+    }
 
-	// $("#finish-reading").click(function() {
-	// 	$("#stimulus-stage").hide();
-	// 	$("#response-form").show();
-	// 	$("#submit-response").removeClass('disabled');
-	// });
+    // $("#finish-reading").click(function() {
+    //  $("#stimulus-stage").hide();
+    //  $("#response-form").show();
+    //  $("#submit-response").removeClass('disabled');
+    // });
 
-	reportBlue = function () {
-		if(lock === false) {
-			$("#more-blue").addClass('disabled');
-			$("#more-blue").html('Sending...');
-			$("#reproduction").val("");
+    reportBlue = function () {
+        if(lock === false) {
+            $("#more-blue").addClass('disabled');
+            $("#more-blue").html('Sending...');
+            $("#reproduction").val("");
 
-			reqwest({
-			    url: "/information",
-			  	method: 'post',
-			  	data: {
-			  		origin_uuid: agent_uuid,
-			  		contents: "0",
-			  		info_type: "meme"
-			  	},
-			  	success: function (resp) {
-			  		$("#more-blue").removeClass('disabled');
-			  		$("#more-blue").blur();
-			  		$("#more-blue").html('Blue');
-			  		createAgent();
-			  	}
-			});
-			lock = true;
-		}
-	};
+            reqwest({
+                url: "/information",
+                method: 'post',
+                data: {
+                    origin_uuid: agent_uuid,
+                    contents: "0",
+                    info_type: "meme"
+                },
+                success: function (resp) {
+                    $("#more-blue").removeClass('disabled');
+                    $("#more-blue").blur();
+                    $("#more-blue").html('Blue');
+                    createAgent();
+                }
+            });
+            lock = true;
+        }
+    };
 
-	reportYellow = function () {
-		if(lock === false) {
-			$("#more-yellow").addClass('disabled');
-			$("#more-yellow").html('Sending...');
-			$("#reproduction").val("");
+    reportYellow = function () {
+        if(lock === false) {
+            $("#more-yellow").addClass('disabled');
+            $("#more-yellow").html('Sending...');
+            $("#reproduction").val("");
 
-			reqwest({
-			    url: "/information",
-			  	method: 'post',
-			  	data: {
-			  		origin_uuid: agent_uuid,
-			  		contents: "1",
-			  		info_type: "meme"
-			  	},
-			  	success: function (resp) {
-			  		$("#more-yellow").removeClass('disabled');
-			  		$("#more-yellow").blur();
-			  		$("#more-yellow").html('Yellow');
-			  		createAgent();
-			  	}
-			});
-			lock = true;
-		}
-	};
+            reqwest({
+                url: "/information",
+                method: 'post',
+                data: {
+                    origin_uuid: agent_uuid,
+                    contents: "1",
+                    info_type: "meme"
+                },
+                success: function (resp) {
+                    $("#more-yellow").removeClass('disabled');
+                    $("#more-yellow").blur();
+                    $("#more-yellow").html('Yellow');
+                    createAgent();
+                }
+            });
+            lock = true;
+        }
+    };
 
-	$(document).keydown(function(e) {
-		var code = e.keyCode || e.which;
-		if(code == 70) { //Enter keycode
-			reportBlue();
-		} else if (code == 74) {
-		  	reportYellow();
-		}
-	});
+    $(document).keydown(function(e) {
+        var code = e.keyCode || e.which;
+        if(code == 70) { //Enter keycode
+            reportBlue();
+        } else if (code == 74) {
+            reportYellow();
+        }
+    });
 
-	$("#more-yellow").click(function() {
-		reportYellow();
-	});
+    $("#more-yellow").click(function() {
+        reportYellow();
+    });
 
-	$("#more-blue").click(function() {
-		reportBlue();
-	});
+    $("#more-blue").click(function() {
+        reportBlue();
+    });
 };
 
 /****************
@@ -326,55 +326,55 @@ var StroopExperiment = function() {
 
 var Questionnaire = function() {
 
-	var error_message = "<h1>Oops!</h1><p>Something went wrong submitting your HIT. This might happen if you lose your internet connection. Press the button to resubmit.</p><button id='resubmit'>Resubmit</button>";
+    var error_message = "<h1>Oops!</h1><p>Something went wrong submitting your HIT. This might happen if you lose your internet connection. Press the button to resubmit.</p><button id='resubmit'>Resubmit</button>";
 
-	record_responses = function() {
+    record_responses = function() {
 
-		psiTurk.recordTrialData({'phase':'postquestionnaire', 'status':'submit'});
+        psiTurk.recordTrialData({'phase':'postquestionnaire', 'status':'submit'});
 
-		$('textarea').each( function(i, val) {
-			psiTurk.recordUnstructuredData(this.id, this.value);
-		});
-		$('select').each( function(i, val) {
-			psiTurk.recordUnstructuredData(this.id, this.value);
-		});
+        $('textarea').each( function(i, val) {
+            psiTurk.recordUnstructuredData(this.id, this.value);
+        });
+        $('select').each( function(i, val) {
+            psiTurk.recordUnstructuredData(this.id, this.value);
+        });
 
-	};
+    };
 
-	prompt_resubmit = function() {
-		replaceBody(error_message);
-		$("#resubmit").click(resubmit);
-	};
+    prompt_resubmit = function() {
+        replaceBody(error_message);
+        $("#resubmit").click(resubmit);
+    };
 
-	resubmit = function() {
-		replaceBody("<h1>Trying to resubmit...</h1>");
-		reprompt = setTimeout(prompt_resubmit, 10000);
+    resubmit = function() {
+        replaceBody("<h1>Trying to resubmit...</h1>");
+        reprompt = setTimeout(prompt_resubmit, 10000);
 
-		psiTurk.saveData({
-			success: function() {
-			    clearInterval(reprompt);
+        psiTurk.saveData({
+            success: function() {
+                clearInterval(reprompt);
                 psiTurk.computeBonus('compute_bonus', function(){finish()});
-			},
-			error: prompt_resubmit
-		});
-	};
+            },
+            error: prompt_resubmit
+        });
+    };
 
-	// Load the questionnaire snippet
-	psiTurk.showPage('postquestionnaire.html');
-	psiTurk.recordTrialData({'phase':'postquestionnaire', 'status':'begin'});
+    // Load the questionnaire snippet
+    psiTurk.showPage('postquestionnaire.html');
+    psiTurk.recordTrialData({'phase':'postquestionnaire', 'status':'begin'});
 
-	$("#next").click(function () {
-		$('#next').prop('disabled', true);
-		$("#next-symbol").attr('class', 'glyphicon glyphicon-refresh glyphicon-refresh-animate');
-	    record_responses();
-	    psiTurk.saveData({
+    $("#next").click(function () {
+        $('#next').prop('disabled', true);
+        $("#next-symbol").attr('class', 'glyphicon glyphicon-refresh glyphicon-refresh-animate');
+        record_responses();
+        psiTurk.saveData({
             success: function(){
                 psiTurk.computeBonus('compute_bonus', function() {
-                	psiTurk.completeHIT(); // when finished saving compute bonus, the quit
+                    psiTurk.completeHIT(); // when finished saving compute bonus, the quit
                 });
             },
             error: prompt_resubmit});
-	});
+    });
 
 
 };
@@ -387,7 +387,7 @@ var currentview;
  ******************/
 $(window).load( function(){
     psiTurk.doInstructions(
-    	instructionPages, // a list of pages you want to display in sequence
-    	function() { currentview = new StroopExperiment(); } // what you want to do when you are done with instructions
+        instructionPages, // a list of pages you want to display in sequence
+        function() { currentview = new StroopExperiment(); } // what you want to do when you are done with instructions
     );
 });
