@@ -49,6 +49,7 @@ var num_practice_trials = 5;
 var StroopExperiment = function() {
 
     trial = 0;
+    lock = true;
 
     // Load the stage.html snippet into the body of the page
     psiTurk.showPage('stage.html');
@@ -123,7 +124,7 @@ var StroopExperiment = function() {
 
 
                 // Show the participant the stimulus.
-                if (learning_strategy == "asocial") {
+                if (learning_strategy === "asocial") {
 
                     $("#instructions").text("Are there more blue or yellow dots?");
 
@@ -151,7 +152,11 @@ var StroopExperiment = function() {
                         $("#stimulus").attr("src", "/static/images/yellow_social.jpg");
                     }
                     $("#stimulus").show();
-                    $("#stimulus").show();
+                    setTimeout(function() {
+                        $("#stimulus").hide();
+                    }, 2000);
+
+                    lock = false;
                 }
             },
             error: function (err) {
@@ -161,7 +166,6 @@ var StroopExperiment = function() {
     };
 
     createAgent();
-
 
     function presentDisplay (argument) {
         for (var i = dots.length - 1; i >= 0; i--) {
