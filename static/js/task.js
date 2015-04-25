@@ -130,24 +130,15 @@ var StroopExperiment = function() {
 			     	state = resp.contents;
 
 			     	if (state == "0") {
-						$("#stimulus").attr("src", "/static/images/blue.jpg");
+			     		regenerateDisplay(75, 25);
 					} else {
-						$("#stimulus").attr("src", "/static/images/yellow.jpg");
+			     		regenerateDisplay(25, 75);
 					}
 
-					$("#stimulus").show();
-					$("#stimulus").show();
 					$("#more-blue").addClass('disabled');
 					$("#more-yellow").addClass('disabled');
 
-					setTimeout(function () {
-						$("#stimulus").hide();
-						$("#stimulus").hide();
-						console.log("ping");
-						$("#more-blue").removeClass('disabled');
-						$("#more-yellow").removeClass('disabled');
-						lock = false;
-					}, 2000);
+					presentDisplay();
 
 			     	$("#stimulus-stage").show();
 					$("#response-form").hide();
@@ -175,6 +166,85 @@ var StroopExperiment = function() {
 	};
 
 	createAgent();
+
+
+	function presentDisplay (argument) {
+		for (var i = dots.length - 1; i >= 0; i--) {
+			dots[i].show();
+		}
+		setTimeout(function() {
+			for (var i = dots.length - 1; i >= 0; i--) {
+				dots[i].hide();
+			}
+			$("#more-blue").removeClass('disabled');
+			$("#more-yellow").removeClass('disabled');
+			lock = false;
+		}, 2000);
+
+	}
+
+	function regenerateDisplay (blueDots, yellowDots) {
+
+		// Display parameters
+		width = 600;
+		height = 400;
+		numDots = 100;
+		dots = [];
+		sizes = [];
+		rMin = 10; // The dots' radius.
+		rMax = 20;
+
+		paper = Raphael(50, 200, width, height);
+
+		colors = [];
+		colorsRGB = ["#428bca", "#FBB829"];
+
+		for (var i = blueDots - 1; i >= 0; i--) {
+			colors.push(0);
+		}
+
+		for (var i = yellowDots - 1; i >= 0; i--) {
+			colors.push(1);
+		}
+
+		colors = shuffle(colors);
+
+		while (dots.length < numDots) {
+
+			// Pick a random location for a new dot.
+			r = randi(rMin, rMax);
+			x = randi(r, width - r);
+			y = randi(r, height - r);
+
+			// Check if there is overlap with any other dots
+			pass = true;
+			for (var i = dots.length - 1; i >= 0; i--) {
+				distance = Math.sqrt(Math.pow(dots[i].attrs.cx - x, 2) + Math.pow(dots[i].attrs.cy - y, 2));
+				if (distance < (sizes[i] + r)) {
+					pass = false;
+				}
+			}
+
+			if (pass) {
+				var dot = paper.circle(x, y, r);
+				dot.hide();
+				// use the appropriate color.
+				dot.attr("fill", colorsRGB[colors[dots.length]]); // FBB829
+				dot.attr("stroke", "#fff");
+				dots.push(dot);
+				sizes.push(r);
+			}
+		}
+	}
+
+	function randi(min, max) {
+    	return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
+
+	function shuffle(o){
+    	for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+   		return o;
+	}
 
 	// $("#finish-reading").click(function() {
 	// 	$("#stimulus-stage").hide();
