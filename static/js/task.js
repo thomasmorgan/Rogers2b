@@ -128,12 +128,7 @@ var StroopExperiment = function() {
                     $("#instructions").text("Are there more blue or yellow dots?");
 
                     state = resp.contents;
-
-                    if (state == "0") {
-                        regenerateDisplay(75, 25);
-                    } else {
-                        regenerateDisplay(25, 75);
-                    }
+                    regenerateDisplay(state);
 
                     $("#more-blue").addClass('disabled');
                     $("#more-yellow").addClass('disabled');
@@ -183,15 +178,17 @@ var StroopExperiment = function() {
 
     }
 
-    function regenerateDisplay (blueDots, yellowDots) {
+    function regenerateDisplay (state) {
 
         // Display parameters
         width = 600;
         height = 400;
         numDots = 100;
         dots = [];
+        blueDots = Math.round(state * numDots);
+        yellowDots = numDots - blueDots;
         sizes = [];
-        rMin = 10; // The dots' radius.
+        rMin = 10; // The dots' minimum radius.
         rMax = 20;
 
         paper = Raphael(50, 200, width, height);
