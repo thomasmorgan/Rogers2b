@@ -3,14 +3,13 @@
 from wallace.environments import Environment
 from wallace.experiments import Experiment
 from wallace.information import Gene, Meme, State
-from wallace.models import Info, Source, Agent
+from wallace.models import Source, Agent
 from wallace.networks import Network
 from wallace.processes import Process
 from wallace.recruiters import PsiTurkRecruiter
 from wallace.transformations import Mutation, Observation
 import math
 import random
-from sqlalchemy import desc
 
 
 class LearningGene(Gene):
@@ -236,7 +235,7 @@ class RogersAgent(Agent):
 
     def mutate(self, info_in):
         # If mutation is happening...
-        if random.random() < 0.50:
+        if random.random() < 1:
 
             # Create a new info based on the old one.
             strats = ["social", "asocial"]
