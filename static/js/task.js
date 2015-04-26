@@ -154,7 +154,7 @@ var StroopExperiment = function() {
                     $("#stimulus").show();
                     setTimeout(function() {
                         $("#stimulus").hide();
-                    }, 2000);
+                    }, 4000);
 
                     lock = false;
                 }
