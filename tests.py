@@ -110,7 +110,7 @@ class TestNetworks(object):
                 net.add_agent(newcomer)
                 self.db.commit()
                 exp.process_type(net).step()
-            
+
                 assert len(newcomer.transmissions(type="incoming", status="pending")) == 1
                 gene = newcomer.infos(type=LearningGene)[0].contents
                 if gene == "asocial":
@@ -182,8 +182,8 @@ class TestNetworks(object):
         assert exp.bonus(participant_uuid="jordan") == 0.00
         assert exp.bonus(participant_uuid="wallace") == 10.00
 
-        assert_raises(ValueError, exp.bonus, participant_uuid="liam") 
-        assert_raises(ValueError, exp.bonus) 
+        assert_raises(ValueError, exp.bonus, participant_uuid="liam")
+        assert_raises(ValueError, exp.bonus)
 
 
 
