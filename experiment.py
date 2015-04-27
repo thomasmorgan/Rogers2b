@@ -39,7 +39,7 @@ class RogersExperiment(Experiment):
         self.networks = Network.query.all()
 
         # Setup for first time experiment is accessed
-        self.proportions = [0.6, 0.7, 0.8] * int((self.num_repeats_experiment + self.num_repeats_practice)/3)
+        self.proportions = [0.6, 0.7, 0.8] * (int((self.num_repeats_experiment + self.num_repeats_practice)/3) + 1)
         for i in range(len(self.networks)):
             net = self.networks[i]
             if not net.nodes(type=Source):
