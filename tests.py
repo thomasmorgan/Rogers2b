@@ -24,13 +24,16 @@ class TestNetworks(object):
 
         exp = RogersExperiment(self.db)
         net = RogersNetwork()
+        exp.num_repeats_practice = 0
+
+        exp.networks = [net]
 
         source = RogersSource()
         net.add(source)
         self.db.add(source)
         source.create_information()
 
-        environment = RogersEnvironment(proportion  = 0.8)
+        environment = RogersEnvironment(proportion=0.8)
         net.add(environment)
         self.db.add(environment)
 

@@ -53,7 +53,10 @@ class RogersExperiment(Experiment):
                 self.save(source)
 
     def agent_type_generator(self, network=None):
-        if len(network.nodes(type=Agent)) < network.num_agents_per_generation:
+        index = self.networks.index(network)
+        if index < self.num_repeats_practice:
+            return RogersAgentFounder
+        elif len(network.nodes(type=Agent)) < network.num_agents_per_generation:
             return RogersAgentFounder
         else:
             return RogersAgent
