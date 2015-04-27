@@ -194,8 +194,9 @@ var StroopExperiment = function() {
         sizes = [];
         rMin = 10; // The dots' minimum radius.
         rMax = 20;
+        horizontalOffset = (window.innerWidth - width) / 2;
 
-        paper = Raphael(50, 200, width, height);
+        paper = Raphael(horizontalOffset, 200, width, height);
 
         colors = [];
         colorsRGB = ["#428bca", "#FBB829"];
