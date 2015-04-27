@@ -168,7 +168,8 @@ class RogersNetworkProcess(Process):
 
         current_generation = int(math.floor((len(self.network.nodes(type=Agent))*1.0-1)/self.network.num_agents_per_generation))
 
-        if (len(self.network.nodes(type=Agent)) % self.network.num_agents_per_generation) == 1:
+        if ((len(self.network.nodes(type=Agent)) % self.network.num_agents_per_generation == 1)
+                & (current_generation % 10 == 0)):
             self.environment.step()
 
         newcomer = self.network.nodes(type=Agent)[-1]
@@ -292,13 +293,12 @@ class RogersEnvironment(Environment):
 
     def step(self):
 
-        if random.random() < 0.10:
-            current_state = self.infos(type=State)[-1]
-            new_state = State(
-                origin=self,
-                origin_uuid=self.uuid,
-                contents=str(1 - float(current_state.contents)))
-            Mutation(
-                info_out=new_state,
-                info_in=current_state,
-                node=self)
+        current_state = self.infos(type=State)[-1]
+        new_state = State(
+            origin=self,
+            origin_uuid=self.uuid,
+            contents=str(1 - float(current_state.contents)))
+        Mutation(
+            info_out=new_state,
+            info_in=current_state,
+            node=self)
