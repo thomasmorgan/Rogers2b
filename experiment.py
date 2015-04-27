@@ -22,8 +22,8 @@ class RogersExperiment(Experiment):
         super(RogersExperiment, self).__init__(session)
 
         self.task = "Rogers network game"
-        self.num_repeats_experiment = 4
-        self.num_repeats_practice = 2
+        self.num_repeats_experiment = 45
+        self.num_repeats_practice = 5
         self.network_type = RogersNetwork
         self.environment_type = RogersEnvironment
         self.process_type = RogersNetworkProcess
@@ -39,7 +39,7 @@ class RogersExperiment(Experiment):
         self.networks = Network.query.all()
 
         # Setup for first time experiment is accessed
-        self.proportions = [0.6, 0.7, 0.8] * (int((self.num_repeats_experiment + self.num_repeats_practice)/3) + 1)
+        self.proportions = [0.8]*self.num_repeats_practice + [0.55, 0.6, 0.65, 0.7, 0.75]*(int(num_repeats_experiment/5) + 1)
         for i in range(len(self.networks)):
             net = self.networks[i]
             if not net.nodes(type=Source):
