@@ -221,9 +221,9 @@ class RogersAgent(Agent):
 
         is_asocial = (self.infos(type=LearningGene)[0].contents == "asocial")
         e = 2
-        b = 20
-        c = 9
-        baseline = 10
+        b = 1
+        c = 0.3*b
+        baseline = c+0.0001
 
         self.fitness = (
             baseline + matches_environment * b - is_asocial * c) ** e
