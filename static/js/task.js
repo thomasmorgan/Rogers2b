@@ -152,7 +152,7 @@ var StroopExperiment = function() {
                     $("#stimulus").show();
                     setTimeout(function() {
                         $("#stimulus").hide();
-                    }, 4000);
+                    }, 3000);
 
                     lock = false;
                 }
@@ -176,7 +176,8 @@ var StroopExperiment = function() {
             $("#more-blue").removeClass('disabled');
             $("#more-yellow").removeClass('disabled');
             lock = false;
-        }, 2000);
+            paper.clear();
+        }, 1000);
 
     }
 
