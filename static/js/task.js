@@ -15,7 +15,6 @@ var mycounterbalance = counterbalance;  // they tell you which condition you hav
 var pages = [
     "instructions/instruct-1.html",
     "instructions/instruct-2.html",
-    "instructions/instruct-3.html",
     "instructions/instruct-ready.html",
     "stage.html",
     "postquestionnaire.html"
@@ -26,7 +25,6 @@ psiTurk.preloadPages(pages);
 var instructionPages = [ // add as a list as many pages as you like
     "instructions/instruct-1.html",
     "instructions/instruct-2.html",
-    "instructions/instruct-3.html",
     "instructions/instruct-ready.html",
 ];
 

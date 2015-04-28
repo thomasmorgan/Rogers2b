@@ -1,22 +1,27 @@
 <div id="container-instructions">
 
-	<h1>Instructions</h1>
+    <h1>Instructions</h1>
 
-	<hr>
+    <hr>
 
-    <p>In this experiment, you will have to decide whether there are more blue dots or yellow dots.</p>
+    <p>In this experiment, you will have to decide whether there are more blue dots or yellow dots. On some rounds, you will see the dots directly. Don't bother trying to count them — they will appear too briefly for that. Instead, you should take your best guess.</p>
+
+    <p>Here is an example of what you might see:</p>
+    <p><img src="/static/images/demo.jpg" width="400px;" /></p>
+    <p>In this image, there are more yellow dots than blue dots.</p>
+
     <script type="text/javascript">
     //console.log(psiTurk.getInstructionIndicator())
     </script>
 
-
-	<hr>
-
+    <hr>
 
     <div class="instructionsnav">
         <div class="row">
             <div class="col-xs-2">
-            	<!-- no previous button on first screen -->
+                <button type="button" id="next" value="next" class="btn btn-primary btn-lg previous">
+                <span class="glyphicon glyphicon-arrow-left"></span> Previous
+                </button>
             </div>
             <div class="col-xs-8">
             </div>
