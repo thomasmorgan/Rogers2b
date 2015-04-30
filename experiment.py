@@ -242,7 +242,7 @@ class RogersAgent(Agent):
 
     def mutate(self, info_in):
         # If mutation is happening...
-        if random.random() < 1:
+        if random.random() < 0.10:
 
             # Create a new info based on the old one.
             strats = ["social", "asocial"]
