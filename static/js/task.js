@@ -186,7 +186,7 @@ var StroopExperiment = function() {
         // Display parameters
         width = 600;
         height = 400;
-        numDots = 100;
+        numDots = 80;
         dots = [];
         blueDots = Math.round(state * numDots);
         yellowDots = numDots - blueDots;
