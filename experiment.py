@@ -4,7 +4,7 @@ from wallace.environments import Environment
 from wallace.experiments import Experiment
 from wallace.information import Gene, Meme, State
 from wallace.models import Source, Agent
-from wallace.networks import Network
+from wallace.networks import Network, DiscreteGenerational
 from wallace.processes import Process
 from wallace.transformations import Mutation, Observation
 import math
@@ -21,13 +21,14 @@ class RogersExperiment(Experiment):
         super(RogersExperiment, self).__init__(session)
 
         self.task = "Rogers network game"
-        self.num_repeats_experiment = 1
-        self.num_repeats_practice = 0
+        self.num_repeats_experiment = 4
+        self.num_repeats_practice = 4
         self.difficulties = [0.50, 0.525, 0.55, 0.575, 0.60, 0.625, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775]
         self.practice_difficulties = [0.80]
-        self.network = lambda: RogersNetwork()
+        self.network = lambda: RogersDiscreteGenerational()
         self.environment_type = RogersEnvironment
         self.process = RogersNetworkProcess
+        self.bonus_payment = 10.00
 
         self.setup()
 
@@ -38,25 +39,26 @@ class RogersExperiment(Experiment):
             net = self.networks[i]
             if not net.nodes(type=Source):
                 source = RogersSource()
-                self.session.add(source)
+                net.add(source)
+                self.save(source)
+                source.create_information()
+
                 environment = RogersEnvironment(proportion=self.proportions[i])
                 net.add(environment)
                 self.save(environment)
-                net.add(source)
-                source.create_information()
-                self.save(source)
 
     def agent(self, network=None):
         index = self.networks.index(network)
         if index < self.num_repeats_practice:
             return RogersAgentFounder
-        elif len(network.nodes(type=Agent)) < network.num_agents_per_generation:
+        elif len(network.nodes(type=Agent)) < network.generation_size:
             return RogersAgentFounder
         else:
             return RogersAgent
 
     def create_agent_trigger(self, agent, network):
         network.add_agent(agent)
+        network.nodes(type=Environment)[0].connect_to(agent)
         self.process(network).step()
 
     def transmission_reception_trigger(self, transmissions):
@@ -89,7 +91,7 @@ class RogersExperiment(Experiment):
             if len(nodes) == 0:
                 raise(ValueError("Cannot calculate bonus of participant_uuid {} as there are no nodes associated with this uuid".format(participant_uuid)))
             score = [node.score() for node in nodes]
-            return (float(sum(score))/float(len(score)))*10.00
+            return (float(sum(score))/float(len(score)))*self.bonus_payment
         else:
             raise(ValueError("You must specify the participant_uuid to calculate the bonus."))
 
@@ -115,47 +117,17 @@ class RogersSource(Source):
         return self.infos(type=LearningGene)[-1]
 
 
-class RogersNetwork(Network):
-    """In a Rogers Network agents are arranged into generations of a set size
-    and each agent is connected to all agents in the previous generation (the
-    first generation agents are connected to a source)
-    """
+class RogersDiscreteGenerational(DiscreteGenerational):
 
-    __mapper_args__ = {"polymorphic_identity": "rogers"}
+    __mapper_args__ = {"polymorphic_identity": "rogers_discrete-generational"}
 
     @property
-    def num_agents_per_generation(self):
+    def generations(self):
         return 4
 
     @property
-    def num_generations(self):
+    def generation_size(self):
         return 4
-
-    @property
-    def num_agents(self):
-        return self.num_agents_per_generation * self.num_generations
-
-    def add_agent(self, newcomer):
-
-        self.add(newcomer)
-
-        # Place them in the network.
-        if len(self.nodes(type=Agent)) <= self.num_agents_per_generation:
-            self.nodes(type=Source)[0].connect_to(newcomer)
-        else:
-            newcomer_generation = math.floor(((len(self.nodes(type=Agent))-1)*1.0)/self.num_agents_per_generation)
-            min_previous_generation = int((newcomer_generation-1)*self.num_agents_per_generation)
-            previous_generation_agents = self.nodes(type=Agent)[min_previous_generation:(min_previous_generation+self.num_agents_per_generation)]
-
-            newcomer.connect_from(previous_generation_agents)
-
-        # Connect the newcomer and environment
-        self.nodes(type=Environment)[0].connect_to(newcomer)
-
-    def agents_of_generation(self, generation):
-        first_index = generation*self.num_agents_per_generation
-        last_index = first_index+(self.num_agents_per_generation)
-        return self.nodes(type=Agent)[first_index:last_index]
 
 
 class RogersNetworkProcess(Process):
@@ -166,9 +138,9 @@ class RogersNetworkProcess(Process):
 
     def step(self, verbose=True):
 
-        current_generation = int(math.floor((len(self.network.nodes(type=Agent))*1.0-1)/self.network.num_agents_per_generation))
+        current_generation = int(math.floor((len(self.network.nodes(type=Agent))*1.0-1)/self.network.generation_size))
 
-        if ((len(self.network.nodes(type=Agent)) % self.network.num_agents_per_generation == 1)
+        if ((len(self.network.nodes(type=Agent)) % self.network.generation_size == 1)
                 & (current_generation % 10 == 0)):
             self.environment.step()
 
@@ -195,7 +167,7 @@ class RogersNetworkProcess(Process):
         newcomer.receive_all()
 
         if (newcomer.infos(type=LearningGene)[0].contents == "social"):
-            rnd = random.randint(0, (self.network.num_agents_per_generation-1))
+            rnd = random.randint(0, (self.network.generation_size-1))
             cultural_parent = potential_parents[rnd]
             cultural_parent.transmit(what=Meme, to_whom=newcomer)
         elif (newcomer.infos(type=LearningGene)[0].contents == "asocial"):
@@ -218,7 +190,7 @@ class RogersAgent(Agent):
         state = self.observe(environment)
         self.receive(state)
 
-        matches_environment = (self.infos(type=Meme)[0].contents == state.contents)
+        matches_environment = self.score()
 
         is_asocial = (self.infos(type=LearningGene)[0].contents == "asocial")
         e = 2
@@ -232,7 +204,7 @@ class RogersAgent(Agent):
     def score(self):
         meme = self.infos(type=Meme)[0]
         state = self.upstream_nodes(type=Environment)[0].state(time=meme.creation_time)
-        return meme.contents == state.contents
+        return float(meme.contents) == round(float(state.contents))
 
     def mutate(self, info_in):
         # If mutation is happening...
