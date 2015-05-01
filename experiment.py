@@ -55,6 +55,10 @@ class RogersExperiment(Experiment):
         else:
             return RogersAgent
 
+    def create_agent_trigger(self, agent, network):
+        network.add_agent(agent)
+        self.process(network).step()
+
     def transmission_reception_trigger(self, transmissions):
         # Mark transmissions as received
         for t in transmissions:

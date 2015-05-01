@@ -39,7 +39,7 @@ class TestNetworks(object):
 
         new_agents = []
         for i in range(16):
-            new_agents.append(exp.agent_type_generator(net)())
+            new_agents.append(exp.agent(net)())
             self.db.add(new_agents[-1])
             net.add_agent(new_agents[-1])
 
@@ -106,13 +106,13 @@ class TestNetworks(object):
 
         for i in range(net.num_generations):
             for j in range(net.num_agents_per_generation):
-                newcomer_type = exp.agent_type_generator(network=net)
+                newcomer_type = exp.agent(network=net)
 
                 newcomer = newcomer_type()
                 self.db.add(newcomer)
                 net.add_agent(newcomer)
                 self.db.commit()
-                exp.process_type(net).step()
+                exp.process(net).step()
 
                 assert len(newcomer.transmissions(type="incoming", status="pending")) == 1
                 gene = newcomer.infos(type=LearningGene)[0].contents
