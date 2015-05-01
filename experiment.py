@@ -6,7 +6,6 @@ from wallace.information import Gene, Meme, State
 from wallace.models import Source, Agent
 from wallace.networks import Network
 from wallace.processes import Process
-from wallace.recruiters import PsiTurkRecruiter
 from wallace.transformations import Mutation, Observation
 import math
 import random
@@ -22,27 +21,19 @@ class RogersExperiment(Experiment):
         super(RogersExperiment, self).__init__(session)
 
         self.task = "Rogers network game"
-        self.num_repeats_experiment = 120
-        self.num_repeats_practice = 5
+        self.num_repeats_experiment = 1
+        self.num_repeats_practice = 0
         self.difficulties = [0.50, 0.525, 0.55, 0.575, 0.60, 0.625, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775]
         self.practice_difficulties = [0.80]
-        self.network_type = RogersNetwork
+        self.network = lambda: RogersNetwork()
         self.environment_type = RogersEnvironment
-        self.process_type = RogersNetworkProcess
-        self.recruiter = PsiTurkRecruiter
+        self.process = RogersNetworkProcess
 
-        # Get a list of all the networks, creating them if they don't already
-        # exist.
-        self.networks = Network.query.all()
-        if not self.networks:
-            for i in range(self.num_repeats_experiment + self.num_repeats_practice):
-                net = self.network_type()
-                self.session.add(net)
-        self.networks = Network.query.all()
+        self.setup()
 
         # Setup for first time experiment is accessed
-        self.proportions = self.practice_difficulties * (self.num_repeats_practice / len(self.practice_difficulties)) \
-            + self.difficulties * (self.num_repeats_experiment / len(self.difficulties))
+        self.proportions = ((self.practice_difficulties*self.num_repeats_practice)[0:self.num_repeats_practice] +
+                            (self.difficulties*self.num_repeats_experiment)[0:self.num_repeats_experiment])
         for i in range(len(self.networks)):
             net = self.networks[i]
             if not net.nodes(type=Source):
@@ -55,7 +46,7 @@ class RogersExperiment(Experiment):
                 source.create_information()
                 self.save(source)
 
-    def agent_type_generator(self, network=None):
+    def agent(self, network=None):
         index = self.networks.index(network)
         if index < self.num_repeats_practice:
             return RogersAgentFounder
@@ -78,15 +69,14 @@ class RogersExperiment(Experiment):
         agent.calculate_fitness()
         self.save(agent)
 
+    def participant_completion_trigger(self):
+
         if self.is_experiment_over():
             # If the experiment is over, stop recruiting and export the data.
             self.recruiter().close_recruitment(self)
         else:
             # Otherwise recruit a new participant.
             self.recruiter().recruit_new_participants(self, n=1)
-
-    def is_network_full(self, network):
-        return len(network.nodes(type=Agent)) >= network.num_agents
 
     def bonus(self, participant_uuid=None):
         if participant_uuid is not None:
