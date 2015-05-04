@@ -25,7 +25,7 @@ class RogersExperiment(Experiment):
         self.num_repeats_practice = 4
         self.difficulties = [0.50, 0.525, 0.55, 0.575, 0.60, 0.625, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775]
         self.practice_difficulties = [0.80]
-        self.network = lambda: RogersDiscreteGenerational()
+        self.network = lambda: DiscreteGenerational(generations=4, generation_size=4, initial_source=True)
         self.environment_type = RogersEnvironment
         self.bonus_payment = 10.00
 
@@ -137,19 +137,6 @@ class RogersSource(Source):
 
     def _what(self):
         return self.infos(type=LearningGene)[-1]
-
-
-class RogersDiscreteGenerational(DiscreteGenerational):
-
-    __mapper_args__ = {"polymorphic_identity": "rogers_discrete-generational"}
-
-    @property
-    def generations(self):
-        return 4
-
-    @property
-    def generation_size(self):
-        return 4
 
 
 class RogersAgent(Agent):
