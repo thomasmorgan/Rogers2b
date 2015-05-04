@@ -3,7 +3,7 @@ import sys
 #from wallace import networks, agents, db, sources, information, models, environments
 from wallace import db
 #from wallace.networks import DiscreteGenerational
-from wallace.models import Agent, Source
+from wallace.models import Agent, Source, Transformation
 from wallace.information import Gene, Meme, State
 from wallace.environments import Environment
 from experiment import RogersExperiment, RogersAgent, RogersAgentFounder, RogersSource, RogersEnvironment, LearningGene

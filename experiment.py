@@ -4,8 +4,8 @@ from wallace.environments import Environment
 from wallace.experiments import Experiment
 from wallace.information import Gene, Meme, State
 from wallace.models import Source, Agent
-from wallace.networks import Network, DiscreteGenerational
-from wallace.processes import Process
+from wallace.networks import DiscreteGenerational
+from wallace import processes
 from wallace.transformations import Mutation, Observation
 import math
 import random
@@ -27,7 +27,6 @@ class RogersExperiment(Experiment):
         self.practice_difficulties = [0.80]
         self.network = lambda: RogersDiscreteGenerational()
         self.environment_type = RogersEnvironment
-        self.process = RogersNetworkProcess
         self.bonus_payment = 10.00
 
         self.setup()
@@ -59,7 +58,7 @@ class RogersExperiment(Experiment):
     def create_agent_trigger(self, agent, network):
         network.add_agent(agent)
         network.nodes(type=Environment)[0].connect_to(agent)
-        self.process(network).step()
+        self.rogers_process(network, agent)
 
     def transmission_reception_trigger(self, transmissions):
         # Mark transmissions as received
@@ -95,6 +94,29 @@ class RogersExperiment(Experiment):
         else:
             raise(ValueError("You must specify the participant_uuid to calculate the bonus."))
 
+    def rogers_process(self, network=None, agent=None):
+
+        current_generation = int(math.floor((len(network.nodes(type=Agent))*1.0-1)/network.generation_size))
+
+        if ((len(network.nodes(type=Agent)) % network.generation_size == 1)
+                & (current_generation % 10 == 0)):
+            network.nodes(type=Environment)[0].step()
+
+        if (current_generation == 0):
+            network.nodes(type=Source)[0].transmit(to_whom=agent)
+        else:
+            processes.transmit_by_fitness(to_whom=agent, what=Gene, from_whom=Agent)
+
+        agent.receive_all()
+
+        gene = agent.infos(type=LearningGene)[0].contents
+        if (gene == "social"):
+            random.choice(agent.upstream_nodes(type=Agent)).transmit(what=Meme, to_whom=agent)
+        elif (gene == "asocial"):
+            agent.observe(network.nodes(type=Environment)[0])
+        else:
+            raise ValueError("{} has invalid learning gene value of {}".format(agent, gene))
+
 
 class RogersSource(Source):
     """A source that initializes agents as asocial learners
@@ -128,52 +150,6 @@ class RogersDiscreteGenerational(DiscreteGenerational):
     @property
     def generation_size(self):
         return 4
-
-
-class RogersNetworkProcess(Process):
-
-    def __init__(self, network):
-        self.network = network
-        self.environment = self.network.nodes(type=Environment)[0]
-
-    def step(self, verbose=True):
-
-        current_generation = int(math.floor((len(self.network.nodes(type=Agent))*1.0-1)/self.network.generation_size))
-
-        if ((len(self.network.nodes(type=Agent)) % self.network.generation_size == 1)
-                & (current_generation % 10 == 0)):
-            self.environment.step()
-
-        newcomer = self.network.nodes(type=Agent)[-1]
-
-        if (current_generation == 0):
-            self.network.nodes(type=Source)[0].transmit(to_whom=newcomer)
-        else:
-            parent = None
-            potential_parents = newcomer.upstream_nodes(type=RogersAgent)
-            potential_parent_fitnesses = [p.fitness for p in potential_parents]
-            potential_parent_probabilities = [(f/(1.0*sum(potential_parent_fitnesses))) for f in potential_parent_fitnesses]
-
-            rnd = random.random()
-            temp = 0.0
-            for i, probability in enumerate(potential_parent_probabilities):
-                temp += probability
-                if temp > rnd:
-                    parent = potential_parents[i]
-                    break
-
-            parent.transmit(what=Gene, to_whom=newcomer)
-
-        newcomer.receive_all()
-
-        if (newcomer.infos(type=LearningGene)[0].contents == "social"):
-            rnd = random.randint(0, (self.network.generation_size-1))
-            cultural_parent = potential_parents[rnd]
-            cultural_parent.transmit(what=Meme, to_whom=newcomer)
-        elif (newcomer.infos(type=LearningGene)[0].contents == "asocial"):
-            newcomer.observe(self.environment)
-        else:
-            raise AssertionError("Learner gene set to non-coherent value")
 
 
 class RogersAgent(Agent):
