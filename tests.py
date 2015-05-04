@@ -195,9 +195,11 @@ class TestRogers(object):
         TEST BONUS
         """
 
+        print("Testing bonus payments...", end="\r")
+
         assert exp.bonus(participant_uuid=p_uuids[0]) == exp.bonus_payment
         assert exp.bonus(participant_uuid=p_uuids[1]) == 0.0
 
-        print("Testing bonus payments..             done!")
+        print("Testing bonus payments...            done!")
 
         print("All tests passed: good job!")
