@@ -1,14 +1,10 @@
 from __future__ import print_function
 import sys
-#from wallace import networks, agents, db, sources, information, models, environments
 from wallace import db
-#from wallace.networks import DiscreteGenerational
 from wallace.models import Agent, Source
 from wallace.information import Gene, Meme, State
 from wallace.environments import Environment
 from experiment import RogersExperiment, RogersAgent, RogersAgentFounder, RogersSource, RogersEnvironment, LearningGene
-#from experiment import RogersDiscreteGenerational, RogersNetworkProcess, RogersSource, RogersAgent, RogersAgentFounder, RogersEnvironment, RogersExperiment, LearningGene
-#from nose.tools import assert_raises
 import random
 
 
@@ -37,8 +33,6 @@ class TestRogers(object):
 
         exp = RogersExperiment(self.db)
 
-        num_reps = exp.experiment_repeats+exp.practice_repeats
-
         p_uuids = []
 
         while not exp.is_experiment_over():
@@ -54,16 +48,19 @@ class TestRogers(object):
             p_uuid = str(random.random())
             p_uuids.append(p_uuid)
 
-            for rep in range(num_reps):
-                agent = exp.assign_agent_to_participant(participant_uuid=p_uuid)
+            while True:
+                try:
+                    agent = exp.assign_agent_to_participant(participant_uuid=p_uuid)
 
-                current_state = float(agent.upstream_nodes(type=Environment)[0].infos(type=State)[-1].contents)
-                if p == 0:
-                    Meme(origin=agent, contents=round(current_state))
-                else:
-                    Meme(origin=agent, contents=random.choice([0, 1]))
-                agent.receive_all()
-                agent.calculate_fitness()
+                    current_state = float(agent.upstream_nodes(type=Environment)[0].infos(type=State)[-1].contents)
+                    if p == 0:
+                        Meme(origin=agent, contents=round(current_state))
+                    else:
+                        Meme(origin=agent, contents=random.choice([0, 1]))
+                    agent.receive_all()
+                    agent.calculate_fitness()
+                except:
+                    break
 
             bonus = exp.bonus(participant_uuid=p_uuid)
             assert bonus >= 0.0
