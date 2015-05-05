@@ -23,8 +23,11 @@ class RogersExperiment(Experiment):
         self.task = "Rogers network game"
         self.num_repeats_experiment = 4
         self.num_repeats_practice = 4
-        self.difficulties = [0.50, 0.525, 0.55, 0.575, 0.60, 0.625, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775]
         self.practice_difficulties = [0.80]
+        self.difficulties = [0.80]
+        #self.difficulties = [0.50, 0.525, 0.55, 0.575, 0.60, 0.625, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775]
+        self.catch_difficulty = 0.80
+        self.min_acceptable_performance = 0.5
         self.network = lambda: DiscreteGenerational(generations=4, generation_size=4, initial_source=True)
         self.environment_type = RogersEnvironment
         self.bonus_payment = 10.00
@@ -48,7 +51,13 @@ class RogersExperiment(Experiment):
 
     def agent(self, network=None):
         index = self.networks.index(network)
+        prop = float(network.nodes(type=Environment)[0].state().contents)
+        if prop < 0.5:
+            prop = 1-prop
+
         if index < self.num_repeats_practice:
+            return RogersAgentFounder
+        elif prop == self.catch_difficulty:
             return RogersAgentFounder
         elif len(network.nodes(type=Agent)) < network.generation_size:
             return RogersAgentFounder
@@ -74,15 +83,6 @@ class RogersExperiment(Experiment):
         agent.calculate_fitness()
         self.save(agent)
 
-    def participant_completion_trigger(self):
-
-        if self.is_experiment_over():
-            # If the experiment is over, stop recruiting and export the data.
-            self.recruiter().close_recruitment(self)
-        else:
-            # Otherwise recruit a new participant.
-            self.recruiter().recruit_new_participants(self, n=1)
-
     def bonus(self, participant_uuid=None):
         if participant_uuid is not None:
             nodes_lists = [net.nodes_of_participant(participant_uuid) for net in self.networks[self.num_repeats_practice:]]
@@ -93,6 +93,26 @@ class RogersExperiment(Experiment):
             return (float(sum(score))/float(len(score)))*self.bonus_payment
         else:
             raise(ValueError("You must specify the participant_uuid to calculate the bonus."))
+
+    def participant_attention_check(self, participant_uuid=None):
+        participant_nodes = [n.nodes_of_participant(participant_uuid=participant_uuid)[0] for n in self.catch_networks()]
+        scores = [n.score() for n in participant_nodes]
+        if participant_nodes:
+            avg = sum(scores)/float(len(scores))
+        else:
+            avg = 1.0
+            print("Warning - no catch networks have been implemented.")
+        if avg < self.min_acceptable_performance:
+            for net in self.networks:
+                for node in net.nodes_of_participant(participant_uuid=participant_uuid):
+                    node.fail()
+
+    def catch_networks(self):
+        exp_nets = self.networks[self.num_repeats_practice:]
+        diffs = [max((float(n.nodes(type=Environment)[0].state().contents), (1-(float(n.nodes(type=Environment)[0].state().contents)))))
+                 for n in exp_nets]
+        catch_nets = [n for n, d in zip(exp_nets, diffs) if d == self.catch_difficulty]
+        return catch_nets
 
     def rogers_process(self, network=None, agent=None):
 

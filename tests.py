@@ -3,7 +3,7 @@ import sys
 #from wallace import networks, agents, db, sources, information, models, environments
 from wallace import db
 #from wallace.networks import DiscreteGenerational
-from wallace.models import Agent, Source, Transformation
+from wallace.models import Agent, Source
 from wallace.information import Gene, Meme, State
 from wallace.environments import Environment
 from experiment import RogersExperiment, RogersAgent, RogersAgentFounder, RogersSource, RogersEnvironment, LearningGene
@@ -36,15 +36,19 @@ class TestRogers(object):
         sys.stdout.flush()
 
         exp = RogersExperiment(self.db)
-        net = exp.networks[0]
 
         num_reps = exp.num_repeats_experiment+exp.num_repeats_practice
 
         p_uuids = []
 
-        for p in range(net.max_size):
+        while not exp.is_experiment_over():
 
-            print("Running simulated experiment... participant {} of {}     ".format(p, net.max_size), end="\r")
+            p = len(exp.networks[0].nodes(type=Agent))
+
+            print("Running simulated experiment... participant {} of {}, {} participants failed.".format(
+                p,
+                exp.networks[0].max_size,
+                len(exp.networks[0].nodes(status="failed"))), end="\r")
             sys.stdout.flush()
 
             p_uuid = str(random.random())
@@ -56,14 +60,15 @@ class TestRogers(object):
                 current_state = float(agent.upstream_nodes(type=Environment)[0].infos(type=State)[-1].contents)
                 if p == 0:
                     Meme(origin=agent, contents=round(current_state))
-                elif p == 1:
-                    Meme(origin=agent, contents=1-round(current_state))
                 else:
                     Meme(origin=agent, contents=random.choice([0, 1]))
                 agent.receive_all()
                 agent.calculate_fitness()
 
-        print("Running simulated experiment...      done!                        ")
+            exp.bonus(participant_uuid=p_uuid)
+            exp.participant_attention_check(participant_uuid=p_uuid)
+
+        print("Running simulated experiment...      done!                                      ")
         sys.stdout.flush()
 
         """
@@ -78,7 +83,7 @@ class TestRogers(object):
             is_practice = exp.networks.index(network) < exp.num_repeats_practice
 
             agents = network.nodes(type=Agent)
-            assert len(agents) == net.max_size
+            assert len(agents) == network.max_size
 
             source = network.nodes(type=Source)[0]
             assert type(source) == RogersSource
@@ -100,7 +105,7 @@ class TestRogers(object):
                     assert source in agent.upstream_nodes()
                     assert environment in agent.upstream_nodes()
                 else:
-                    assert len(agent.upstream_nodes()) == 1 + net.generation_size
+                    assert len(agent.upstream_nodes()) == 1 + network.generation_size
                     assert environment in agent.upstream_nodes()
                     assert any([a.__class__ == RogersAgent for a in agent.upstream_nodes()]) ^ any([a.__class__ == RogersAgentFounder for a in agent.upstream_nodes()])
 
@@ -114,19 +119,20 @@ class TestRogers(object):
         print("Testing vectors...", end="\r")
         sys.stdout.flush()
 
-        for gen in range(net.generations-1):
-            for agent in range(net.generation_size):
-                for other_agent in range(net.generation_size):
-                    assert agents[gen*net.generation_size + agent].has_connection_to(agents[(gen+1)*net.generation_size+other_agent])
+        for network in exp.networks:
+            for gen in range(network.generations-1):
+                for agent in range(network.generation_size):
+                    for other_agent in range(network.generation_size):
+                        assert agents[gen*network.generation_size + agent].has_connection_to(agents[(gen+1)*network.generation_size+other_agent])
 
-        for agent in range(net.generation_size):
-            assert source.has_connection_to(agents[agent])
+            for agent in range(network.generation_size):
+                assert source.has_connection_to(agents[agent])
 
-        for agent in agents:
-            assert environment in agent.upstream_nodes()
+            for agent in agents:
+                assert environment in agent.upstream_nodes()
 
-        for agent in source.downstream_nodes():
-            assert isinstance(agent, RogersAgentFounder)
+            for agent in source.downstream_nodes():
+                assert isinstance(agent, RogersAgentFounder)
 
         print("Testing vectors...                   done!")
         sys.stdout.flush()
@@ -138,11 +144,13 @@ class TestRogers(object):
         print("Testing infos...", end="\r")
         sys.stdout.flush()
 
-        for agent in agents:
-            assert len(agent.infos(type=Gene)) == 1
-            assert len(agent.infos(type=LearningGene)) == 1
-            assert len(agent.infos(type=Meme)) == 1
-            assert len(agent.infos()) == 2
+        for network in exp.networks:
+            agents = network.nodes(type=Agent)
+            for agent in agents:
+                assert len(agent.infos(type=Gene)) == 1
+                assert len(agent.infos(type=LearningGene)) == 1
+                assert len(agent.infos(type=Meme)) == 1
+                assert len(agent.infos()) == 2
 
         print("Testing infos...                     done!")
         sys.stdout.flush()
@@ -153,18 +161,20 @@ class TestRogers(object):
 
         print("Testing transmissions...", end="\r")
 
-        for agent in agents:
-            in_ts = agent.transmissions(type="incoming", status="all")
-            types = [type(t.info) for t in in_ts]
-            assert len(in_ts) == 3
-            if agent.infos(type=LearningGene)[0].contents == "asocial":
-                assert State in types
-                assert LearningGene in types
-                assert Meme not in types
-            else:
-                assert State in types
-                assert LearningGene in types
-                assert Meme in types
+        for network in exp.networks:
+            agents = network.nodes(type=Agent)
+            for agent in agents:
+                in_ts = agent.transmissions(type="incoming", status="all")
+                types = [type(t.info) for t in in_ts]
+                assert len(in_ts) == 3
+                if agent.infos(type=LearningGene)[0].contents == "asocial":
+                    assert State in types
+                    assert LearningGene in types
+                    assert Meme not in types
+                else:
+                    assert State in types
+                    assert LearningGene in types
+                    assert Meme in types
 
         print("Testing transmissions...             done!")
 
@@ -175,7 +185,6 @@ class TestRogers(object):
         print("Testing fitness...", end="\r")
 
         p0_nodes = [n.nodes_of_participant(p_uuids[0])[0] for n in exp.networks]
-        p1_nodes = [n.nodes_of_participant(p_uuids[1])[0] for n in exp.networks]
 
         is_asocial = True
         e = 2
@@ -186,8 +195,10 @@ class TestRogers(object):
         for n in p0_nodes:
             assert n.fitness == (baseline + 1 * b - is_asocial * c) ** e
 
-        for n in p1_nodes:
-            assert n.fitness == (baseline - is_asocial * c) ** e
+        for network in exp.networks:
+            for agent in network.nodes(type=Agent):
+                is_asocial = (agent.infos(type=LearningGene)[0].contents == "asocial")
+                assert agent.fitness == ((baseline + agent.score()*b - is_asocial*c) ** e)
 
         print("Testing fitness...                   done!")
 
@@ -198,7 +209,6 @@ class TestRogers(object):
         print("Testing bonus payments...", end="\r")
 
         assert exp.bonus(participant_uuid=p_uuids[0]) == exp.bonus_payment
-        assert exp.bonus(participant_uuid=p_uuids[1]) == 0.0
 
         print("Testing bonus payments...            done!")
 
