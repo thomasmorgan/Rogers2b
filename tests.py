@@ -65,7 +65,10 @@ class TestRogers(object):
                 agent.receive_all()
                 agent.calculate_fitness()
 
-            exp.bonus(participant_uuid=p_uuid)
+            bonus = exp.bonus(participant_uuid=p_uuid)
+            assert bonus >= 0.0
+            assert bonus <= exp.bonus_payment
+
             exp.participant_attention_check(participant_uuid=p_uuid)
 
         print("Running simulated experiment...      done!                                      ")

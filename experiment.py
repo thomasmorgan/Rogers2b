@@ -23,6 +23,8 @@ class RogersExperiment(Experiment):
         self.task = "Rogers network game"
         self.experiment_repeats = 8
         self.practice_repeats = 4
+        # note that catch repeats are a subset of experiment repeats!
+        self.catch_repeats = 4
         self.practice_difficulty = 0.80
         self.difficulties = [0.50, 0.525, 0.55, 0.575, 0.60, 0.625, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775]*self.experiment_repeats
         self.catch_difficulty = 0.80
@@ -33,7 +35,6 @@ class RogersExperiment(Experiment):
 
         self.setup()
 
-        self.catch_repeats = 4
         for _ in range(self.catch_repeats):
             random.choice(self.networks(role="experiment")).role = "catch"
 
@@ -95,7 +96,9 @@ class RogersExperiment(Experiment):
             if len(nodes) == 0:
                 raise(ValueError("Cannot calculate bonus of participant_uuid {} as there are no nodes associated with this uuid".format(participant_uuid)))
             score = [node.score() for node in nodes]
-            return (float(sum(score))/float(len(score)))*self.bonus_payment
+            average = float(sum(score))/float(len(score))
+            bonus = max(0, ((average-0.5)*2))*self.bonus_payment
+            return bonus
         else:
             raise(ValueError("You must specify the participant_uuid to calculate the bonus."))
 
