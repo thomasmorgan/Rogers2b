@@ -74,7 +74,26 @@ class RogersExperiment(Experiment):
     def create_agent_trigger(self, agent, network):
         network.add_agent(agent)
         network.nodes(type=Environment)[0].connect_to(agent)
-        self.rogers_process(network, agent)
+        current_generation = int(math.floor((len(network.nodes(type=Agent))*1.0-1)/network.generation_size))
+
+        if ((len(network.nodes(type=Agent)) % network.generation_size == 1)
+                & (current_generation % 10 == 0)):
+            network.nodes(type=Environment)[0].step()
+
+        if (current_generation == 0):
+            network.nodes(type=Source)[0].transmit(to_whom=agent)
+        else:
+            processes.transmit_by_fitness(to_whom=agent, what=Gene, from_whom=Agent)
+
+        agent.receive_all()
+
+        gene = agent.infos(type=LearningGene)[0].contents
+        if (gene == "social"):
+            random.choice(agent.upstream_nodes(type=Agent)).transmit(what=Meme, to_whom=agent)
+        elif (gene == "asocial"):
+            agent.observe(network.nodes(type=Environment)[0])
+        else:
+            raise ValueError("{} has invalid learning gene value of {}".format(agent, gene))
 
     def transmission_reception_trigger(self, transmissions):
         # Mark transmissions as received
@@ -114,29 +133,6 @@ class RogersExperiment(Experiment):
             for net in self.networks():
                 for node in net.nodes_of_participant(participant_uuid=participant_uuid):
                     node.fail()
-
-    def rogers_process(self, network=None, agent=None):
-
-        current_generation = int(math.floor((len(network.nodes(type=Agent))*1.0-1)/network.generation_size))
-
-        if ((len(network.nodes(type=Agent)) % network.generation_size == 1)
-                & (current_generation % 10 == 0)):
-            network.nodes(type=Environment)[0].step()
-
-        if (current_generation == 0):
-            network.nodes(type=Source)[0].transmit(to_whom=agent)
-        else:
-            processes.transmit_by_fitness(to_whom=agent, what=Gene, from_whom=Agent)
-
-        agent.receive_all()
-
-        gene = agent.infos(type=LearningGene)[0].contents
-        if (gene == "social"):
-            random.choice(agent.upstream_nodes(type=Agent)).transmit(what=Meme, to_whom=agent)
-        elif (gene == "asocial"):
-            agent.observe(network.nodes(type=Environment)[0])
-        else:
-            raise ValueError("{} has invalid learning gene value of {}".format(agent, gene))
 
 
 class RogersSource(Source):
