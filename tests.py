@@ -37,18 +37,18 @@ class TestRogers(object):
 
         exp = RogersExperiment(self.db)
 
-        num_reps = exp.num_repeats_experiment+exp.num_repeats_practice
+        num_reps = exp.experiment_repeats+exp.practice_repeats
 
         p_uuids = []
 
         while not exp.is_experiment_over():
 
-            p = len(exp.networks[0].nodes(type=Agent))
+            p = len(exp.networks()[0].nodes(type=Agent))
 
             print("Running simulated experiment... participant {} of {}, {} participants failed.".format(
                 p,
-                exp.networks[0].max_size,
-                len(exp.networks[0].nodes(status="failed"))), end="\r")
+                exp.networks()[0].max_size,
+                len(exp.networks()[0].nodes(status="failed"))), end="\r")
             sys.stdout.flush()
 
             p_uuid = str(random.random())
@@ -78,9 +78,9 @@ class TestRogers(object):
         print("Testing nodes...", end="\r")
         sys.stdout.flush()
 
-        for network in exp.networks:
+        for network in exp.networks():
 
-            is_practice = exp.networks.index(network) < exp.num_repeats_practice
+            role = network.role
 
             agents = network.nodes(type=Agent)
             assert len(agents) == network.max_size
@@ -91,7 +91,10 @@ class TestRogers(object):
             environment = network.nodes(type=Environment)[0]
             assert type(environment) == RogersEnvironment
 
-            if is_practice:
+            if role == "practice":
+                for agent in agents:
+                    assert type(agent) == RogersAgentFounder
+            elif role == "catch":
                 for agent in agents:
                     assert type(agent) == RogersAgentFounder
             else:
@@ -119,7 +122,7 @@ class TestRogers(object):
         print("Testing vectors...", end="\r")
         sys.stdout.flush()
 
-        for network in exp.networks:
+        for network in exp.networks():
             for gen in range(network.generations-1):
                 for agent in range(network.generation_size):
                     for other_agent in range(network.generation_size):
@@ -144,7 +147,7 @@ class TestRogers(object):
         print("Testing infos...", end="\r")
         sys.stdout.flush()
 
-        for network in exp.networks:
+        for network in exp.networks():
             agents = network.nodes(type=Agent)
             for agent in agents:
                 assert len(agent.infos(type=Gene)) == 1
@@ -161,7 +164,7 @@ class TestRogers(object):
 
         print("Testing transmissions...", end="\r")
 
-        for network in exp.networks:
+        for network in exp.networks():
             agents = network.nodes(type=Agent)
             for agent in agents:
                 in_ts = agent.transmissions(type="incoming", status="all")
@@ -184,7 +187,7 @@ class TestRogers(object):
 
         print("Testing fitness...", end="\r")
 
-        p0_nodes = [n.nodes_of_participant(p_uuids[0])[0] for n in exp.networks]
+        p0_nodes = [n.nodes_of_participant(p_uuids[0])[0] for n in exp.networks()]
 
         is_asocial = True
         e = 2
@@ -195,7 +198,7 @@ class TestRogers(object):
         for n in p0_nodes:
             assert n.fitness == (baseline + 1 * b - is_asocial * c) ** e
 
-        for network in exp.networks:
+        for network in exp.networks():
             for agent in network.nodes(type=Agent):
                 is_asocial = (agent.infos(type=LearningGene)[0].contents == "asocial")
                 assert agent.fitness == ((baseline + agent.score()*b - is_asocial*c) ** e)

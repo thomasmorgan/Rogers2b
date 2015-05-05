@@ -3,7 +3,7 @@
 from wallace.environments import Environment
 from wallace.experiments import Experiment
 from wallace.information import Gene, Meme, State
-from wallace.models import Source, Agent
+from wallace.models import Source, Agent, Node
 from wallace.networks import DiscreteGenerational
 from wallace import processes
 from wallace.transformations import Mutation, Observation
@@ -21,11 +21,10 @@ class RogersExperiment(Experiment):
         super(RogersExperiment, self).__init__(session)
 
         self.task = "Rogers network game"
-        self.num_repeats_experiment = 4
-        self.num_repeats_practice = 4
-        self.practice_difficulties = [0.80]
-        self.difficulties = [0.80]
-        #self.difficulties = [0.50, 0.525, 0.55, 0.575, 0.60, 0.625, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775]
+        self.experiment_repeats = 8
+        self.practice_repeats = 4
+        self.practice_difficulty = 0.80
+        self.difficulties = [0.50, 0.525, 0.55, 0.575, 0.60, 0.625, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775]*self.experiment_repeats
         self.catch_difficulty = 0.80
         self.min_acceptable_performance = 0.5
         self.network = lambda: DiscreteGenerational(generations=4, generation_size=4, initial_source=True)
@@ -34,30 +33,37 @@ class RogersExperiment(Experiment):
 
         self.setup()
 
+        self.catch_repeats = 4
+        for _ in range(self.catch_repeats):
+            random.choice(self.networks(role="experiment")).role = "catch"
+
         # Setup for first time experiment is accessed
-        self.proportions = ((self.practice_difficulties*self.num_repeats_practice)[0:self.num_repeats_practice] +
-                            (self.difficulties*self.num_repeats_experiment)[0:self.num_repeats_experiment])
-        for i in range(len(self.networks)):
-            net = self.networks[i]
+
+        for net in self.networks():
             if not net.nodes(type=Source):
                 source = RogersSource()
                 net.add(source)
                 self.save(source)
                 source.create_information()
 
-                environment = RogersEnvironment(proportion=self.proportions[i])
-                net.add(environment)
-                self.save(environment)
+        for net in self.networks(role="practice"):
+            environment = RogersEnvironment(proportion=self.practice_difficulty)
+            net.add(environment)
+            self.save(environment)
+
+        for net in self.networks(role="catch"):
+            environment = RogersEnvironment(proportion=self.catch_difficulty)
+            net.add(environment)
+            self.save(environment)
+
+        exp_nets = self.networks(role="experiment")
+        for i in range(len(exp_nets)):
+            environment = RogersEnvironment(proportion=self.difficulties[i])
+            exp_nets[i].add(environment)
+            self.save(environment)
 
     def agent(self, network=None):
-        index = self.networks.index(network)
-        prop = float(network.nodes(type=Environment)[0].state().contents)
-        if prop < 0.5:
-            prop = 1-prop
-
-        if index < self.num_repeats_practice:
-            return RogersAgentFounder
-        elif prop == self.catch_difficulty:
+        if network.role == "practice" or network.role == "catch":
             return RogersAgentFounder
         elif len(network.nodes(type=Agent)) < network.generation_size:
             return RogersAgentFounder
@@ -85,8 +91,7 @@ class RogersExperiment(Experiment):
 
     def bonus(self, participant_uuid=None):
         if participant_uuid is not None:
-            nodes_lists = [net.nodes_of_participant(participant_uuid) for net in self.networks[self.num_repeats_practice:]]
-            nodes = [node for sublist in nodes_lists for node in sublist]
+            nodes = [net.nodes_of_participant(participant_uuid)[0] for net in self.networks(role="experiment")]
             if len(nodes) == 0:
                 raise(ValueError("Cannot calculate bonus of participant_uuid {} as there are no nodes associated with this uuid".format(participant_uuid)))
             score = [node.score() for node in nodes]
@@ -95,7 +100,7 @@ class RogersExperiment(Experiment):
             raise(ValueError("You must specify the participant_uuid to calculate the bonus."))
 
     def participant_attention_check(self, participant_uuid=None):
-        participant_nodes = [n.nodes_of_participant(participant_uuid=participant_uuid)[0] for n in self.catch_networks()]
+        participant_nodes = [n.nodes_of_participant(participant_uuid=participant_uuid)[0] for n in self.networks(role="catch")]
         scores = [n.score() for n in participant_nodes]
         if participant_nodes:
             avg = sum(scores)/float(len(scores))
@@ -103,16 +108,9 @@ class RogersExperiment(Experiment):
             avg = 1.0
             print("Warning - no catch networks have been implemented.")
         if avg < self.min_acceptable_performance:
-            for net in self.networks:
+            for net in self.networks():
                 for node in net.nodes_of_participant(participant_uuid=participant_uuid):
                     node.fail()
-
-    def catch_networks(self):
-        exp_nets = self.networks[self.num_repeats_practice:]
-        diffs = [max((float(n.nodes(type=Environment)[0].state().contents), (1-(float(n.nodes(type=Environment)[0].state().contents)))))
-                 for n in exp_nets]
-        catch_nets = [n for n, d in zip(exp_nets, diffs) if d == self.catch_difficulty]
-        return catch_nets
 
     def rogers_process(self, network=None, agent=None):
 
