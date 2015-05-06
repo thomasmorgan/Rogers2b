@@ -59,7 +59,7 @@ class TestRogers(object):
                         Meme(origin=agent, contents=round(current_state))
                     else:
                         Meme(origin=agent, contents=random.choice([0, 1]))
-                    agent.receive_all()
+                    agent.receive()
                     agent.calculate_fitness()
 
             bonus = exp.bonus(participant_uuid=p_uuid)

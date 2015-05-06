@@ -85,7 +85,7 @@ class RogersExperiment(Experiment):
         else:
             processes.transmit_by_fitness(to_whom=agent, what=Gene, from_whom=Agent)
 
-        agent.receive_all()
+        agent.receive()
 
         gene = agent.infos(type=LearningGene)[0].contents
         if (gene == "social"):
