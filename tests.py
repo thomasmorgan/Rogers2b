@@ -126,10 +126,10 @@ class TestRogers(object):
             for gen in range(network.generations-1):
                 for agent in range(network.generation_size):
                     for other_agent in range(network.generation_size):
-                        assert agents[gen*network.generation_size + agent].has_connection_to(agents[(gen+1)*network.generation_size+other_agent])
+                        assert agents[gen*network.generation_size + agent].is_connected(direction="to", other_node=agents[(gen+1)*network.generation_size+other_agent])
 
             for agent in range(network.generation_size):
-                assert source.has_connection_to(agents[agent])
+                assert source.is_connected(direction="to", other_node=agents[agent])
 
             for agent in agents:
                 assert environment in agent.neighbors(connection="from")
