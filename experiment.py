@@ -91,7 +91,7 @@ class RogersExperiment(Experiment):
         if (gene == "social"):
             random.choice(agent.neighbors(connection="from", type=Agent)).transmit(what=Meme, to_whom=agent)
         elif (gene == "asocial"):
-            agent.observe(network.nodes(type=Environment)[0])
+            network.nodes(type=Environment)[0].transmit(to_whom=agent)
         else:
             raise ValueError("{} has invalid learning gene value of {}".format(agent, gene))
 
@@ -165,11 +165,6 @@ class RogersAgent(Agent):
         if self.fitness is not None:
             raise Exception("You are calculating the fitness of agent {}, ".format(self.uuid) +
                             "but they already have a fitness")
-
-        environment = self.neighbors(connection="from", type=Environment)[0]
-        state = self.observe(environment)
-        self.receive(state)
-
         matches_environment = self.score()
 
         is_asocial = (self.infos(type=LearningGene)[0].contents == "asocial")
