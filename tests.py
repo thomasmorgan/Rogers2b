@@ -54,7 +54,7 @@ class TestRogers(object):
                 except:
                     break
                 else:
-                    current_state = float(agent.upstream_nodes(type=Environment)[0].infos(type=State)[-1].contents)
+                    current_state = float(agent.neighbors(connection="from", type=Environment)[0].infos(type=State)[-1].contents)
                     if p == 0:
                         Meme(origin=agent, contents=round(current_state))
                     else:
@@ -104,13 +104,13 @@ class TestRogers(object):
             for agent in agents:
                 position = agents.index(agent)
                 if position < network.generation_size:
-                    assert len(agent.upstream_nodes()) == 2
-                    assert source in agent.upstream_nodes()
-                    assert environment in agent.upstream_nodes()
+                    assert len(agent.neighbors(connection="from")) == 2
+                    assert source in agent.neighbors(connection="from")
+                    assert environment in agent.neighbors(connection="from")
                 else:
-                    assert len(agent.upstream_nodes()) == 1 + network.generation_size
-                    assert environment in agent.upstream_nodes()
-                    assert any([a.__class__ == RogersAgent for a in agent.upstream_nodes()]) ^ any([a.__class__ == RogersAgentFounder for a in agent.upstream_nodes()])
+                    assert len(agent.neighbors(connection="from")) == 1 + network.generation_size
+                    assert environment in agent.neighbors(connection="from")
+                    assert any([a.__class__ == RogersAgent for a in agent.neighbors(connection="from")]) ^ any([a.__class__ == RogersAgentFounder for a in agent.neighbors(connection="from")])
 
         print("Testing nodes...                     done!")
         sys.stdout.flush()
@@ -132,9 +132,9 @@ class TestRogers(object):
                 assert source.has_connection_to(agents[agent])
 
             for agent in agents:
-                assert environment in agent.upstream_nodes()
+                assert environment in agent.neighbors(connection="from")
 
-            for agent in source.downstream_nodes():
+            for agent in source.neighbors(connection="to"):
                 assert isinstance(agent, RogersAgentFounder)
 
         print("Testing vectors...                   done!")

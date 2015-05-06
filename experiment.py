@@ -89,7 +89,7 @@ class RogersExperiment(Experiment):
 
         gene = agent.infos(type=LearningGene)[0].contents
         if (gene == "social"):
-            random.choice(agent.upstream_nodes(type=Agent)).transmit(what=Meme, to_whom=agent)
+            random.choice(agent.neighbors(connection="from", type=Agent)).transmit(what=Meme, to_whom=agent)
         elif (gene == "asocial"):
             agent.observe(network.nodes(type=Environment)[0])
         else:
@@ -166,7 +166,7 @@ class RogersAgent(Agent):
             raise Exception("You are calculating the fitness of agent {}, ".format(self.uuid) +
                             "but they already have a fitness")
 
-        environment = self.upstream_nodes(type=Environment)[0]
+        environment = self.neighbors(connection="from", type=Environment)[0]
         state = self.observe(environment)
         self.receive(state)
 
@@ -183,7 +183,7 @@ class RogersAgent(Agent):
 
     def score(self):
         meme = self.infos(type=Meme)[0]
-        state = self.upstream_nodes(type=Environment)[0].state(time=meme.creation_time)
+        state = self.neighbors(connection="from", type=Environment)[0].state(time=meme.creation_time)
         return float(meme.contents) == round(float(state.contents))
 
     def mutate(self, info_in):
