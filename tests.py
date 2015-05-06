@@ -39,6 +39,10 @@ class TestRogers(object):
 
             p = len(exp.networks()[0].nodes(type=Agent))
 
+            for agent in exp.networks()[0].nodes(type=Agent):
+                if agent.status == "failed":
+                    print("fbvhkjfdsbhvjkfd bhvjkfdb jvf dbhjvkf dbhvjkf svhjfks bvhfs bfghs vbfjs vfhjs vfghjsd ")
+
             print("Running simulated experiment... participant {} of {}, {} participants failed.".format(
                 p+1,
                 exp.networks()[0].max_size,
@@ -188,7 +192,7 @@ class TestRogers(object):
 
         print("Testing fitness...", end="\r")
 
-        p0_nodes = [n.nodes_of_participant(p_uuids[0])[0] for n in exp.networks()]
+        p0_nodes = [n.nodes(participant_uuid=p_uuids[0])[0] for n in exp.networks()]
 
         is_asocial = True
         e = 2

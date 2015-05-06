@@ -110,28 +110,29 @@ class RogersExperiment(Experiment):
         self.save(agent)
 
     def bonus(self, participant_uuid=None):
-        if participant_uuid is not None:
-            nodes = [net.nodes_of_participant(participant_uuid)[0] for net in self.networks(role="experiment")]
-            if len(nodes) == 0:
-                raise(ValueError("Cannot calculate bonus of participant_uuid {} as there are no nodes associated with this uuid".format(participant_uuid)))
-            score = [node.score() for node in nodes]
-            average = float(sum(score))/float(len(score))
-            bonus = max(0, ((average-0.5)*2))*self.bonus_payment
-            return bonus
-        else:
+        if participant_uuid is None:
             raise(ValueError("You must specify the participant_uuid to calculate the bonus."))
 
+        nodes = []
+        for net in self.networks(role="experiment"):
+            nodes += [n for n in net.nodes(participant_uuid=participant_uuid)]
+        if len(nodes) == 0:
+            raise(ValueError("Cannot calculate bonus of participant_uuid {} as there are no nodes associated with this uuid".format(participant_uuid)))
+        score = [node.score() for node in nodes]
+        average = float(sum(score))/float(len(score))
+        bonus = max(0, ((average-0.5)*2))*self.bonus_payment
+        return bonus
+
     def participant_attention_check(self, participant_uuid=None):
-        participant_nodes = [n.nodes_of_participant(participant_uuid=participant_uuid)[0] for n in self.networks(role="catch")]
+        participant_nodes = [net.nodes(participant_uuid=participant_uuid)[0] for net in self.networks(role="catch")]
         scores = [n.score() for n in participant_nodes]
         if participant_nodes:
             avg = sum(scores)/float(len(scores))
         else:
             avg = 1.0
-            print("Warning - no catch networks have been implemented.")
         if avg < self.min_acceptable_performance:
             for net in self.networks():
-                for node in net.nodes_of_participant(participant_uuid=participant_uuid):
+                for node in net.nodes(participant_uuid=participant_uuid):
                     node.fail()
 
 
