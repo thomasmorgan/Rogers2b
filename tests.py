@@ -40,7 +40,7 @@ class TestRogers(object):
             p = len(exp.networks()[0].nodes(type=Agent))
 
             print("Running simulated experiment... participant {} of {}, {} participants failed.".format(
-                p,
+                p+1,
                 exp.networks()[0].max_size,
                 len(exp.networks()[0].nodes(status="failed"))), end="\r")
             sys.stdout.flush()
@@ -51,7 +51,9 @@ class TestRogers(object):
             while True:
                 try:
                     agent = exp.assign_agent_to_participant(participant_uuid=p_uuid)
-
+                except:
+                    break
+                else:
                     current_state = float(agent.upstream_nodes(type=Environment)[0].infos(type=State)[-1].contents)
                     if p == 0:
                         Meme(origin=agent, contents=round(current_state))
@@ -59,8 +61,6 @@ class TestRogers(object):
                         Meme(origin=agent, contents=random.choice([0, 1]))
                     agent.receive_all()
                     agent.calculate_fitness()
-                except:
-                    break
 
             bonus = exp.bonus(participant_uuid=p_uuid)
             assert bonus >= 0.0
@@ -167,7 +167,7 @@ class TestRogers(object):
         for network in exp.networks():
             agents = network.nodes(type=Agent)
             for agent in agents:
-                in_ts = agent.transmissions(type="incoming", status="all")
+                in_ts = agent.transmissions(direction="incoming", state="all")
                 types = [type(t.info) for t in in_ts]
                 assert len(in_ts) == 3
                 if agent.infos(type=LearningGene)[0].contents == "asocial":
