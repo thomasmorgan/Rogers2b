@@ -3,7 +3,7 @@
 from wallace.environments import Environment
 from wallace.experiments import Experiment
 from wallace.information import Gene, Meme, State
-from wallace.models import Source, Agent, Node
+from wallace.models import Source, Agent, Node, Network
 from wallace.networks import DiscreteGenerational
 from wallace import processes
 from wallace.transformations import Mutation, Observation
@@ -174,8 +174,8 @@ class RogersAgent(Agent):
         c = 0.3*b
         baseline = c+0.0001
 
-        self.fitness = (
-            baseline + matches_environment * b - is_asocial * c) ** e
+        self.set_fitness(
+            (baseline + matches_environment * b - is_asocial * c) ** e)
 
     def score(self):
         meme = self.infos(type=Meme)[0]

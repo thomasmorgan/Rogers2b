@@ -37,14 +37,11 @@ class TestRogers(object):
 
         while not exp.is_experiment_over():
 
-            p = len(exp.networks()[0].nodes(type=Agent))
 
-            for agent in exp.networks()[0].nodes(type=Agent):
-                if agent.status == "failed":
-                    print("fbvhkjfdsbhvjkfd bhvjkfdb jvf dbhjvkf dbhvjkf svhjfks bvhfs bfghs vbfjs vfhjs vfghjsd ")
+            num_completed_participants = len(exp.networks()[0].nodes(type=Agent))
 
             print("Running simulated experiment... participant {} of {}, {} participants failed.".format(
-                p+1,
+                num_completed_participants+1,
                 exp.networks()[0].max_size,
                 len(exp.networks()[0].nodes(status="failed"))), end="\r")
             sys.stdout.flush()
@@ -59,7 +56,7 @@ class TestRogers(object):
                     break
                 else:
                     current_state = float(agent.neighbors(connection="from", type=Environment)[0].infos(type=State)[-1].contents)
-                    if p == 0:
+                    if num_completed_participants == 0:
                         Meme(origin=agent, contents=round(current_state))
                     else:
                         Meme(origin=agent, contents=random.choice([0, 1]))
