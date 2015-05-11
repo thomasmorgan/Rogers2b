@@ -1,9 +1,8 @@
 from __future__ import print_function
 import sys
 from wallace import db
-from wallace.models import Agent, Source
+from wallace.nodes import Agent, Source, Environment
 from wallace.information import Gene, Meme, State
-from wallace.environments import Environment
 from experiment import RogersExperiment, RogersAgent, RogersAgentFounder, RogersSource, RogersEnvironment, LearningGene
 import random
 
@@ -37,7 +36,6 @@ class TestRogers(object):
 
         while not exp.is_experiment_over():
 
-
             num_completed_participants = len(exp.networks()[0].nodes(type=Agent))
 
             print("Running simulated experiment... participant {} of {}, {} participants failed.".format(
@@ -55,14 +53,15 @@ class TestRogers(object):
                 except:
                     break
                 else:
+                    transmission = agent.transmissions(state="pending", direction="incoming")[0]
+                    agent.receive(transmission)
                     current_state = float(agent.neighbors(connection="from", type=Environment)[0].infos(type=State)[-1].contents)
                     if num_completed_participants == 0:
                         Meme(origin=agent, contents=round(current_state))
                     else:
                         Meme(origin=agent, contents=random.choice([0, 1]))
-                    agent.receive()
+                    #agent.receive()
                     agent.calculate_fitness()
-
             bonus = exp.bonus(participant_uuid=p_uuid)
             assert bonus >= 0.0
             assert bonus <= exp.bonus_payment

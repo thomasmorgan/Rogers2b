@@ -1,9 +1,8 @@
 """Replicate Rogers' paradox by simulating evolution with people."""
 
-from wallace.environments import Environment
 from wallace.experiments import Experiment
 from wallace.information import Gene, Meme, State
-from wallace.models import Source, Agent, Node, Network
+from wallace.nodes import Source, Agent, Environment
 from wallace.networks import DiscreteGenerational
 from wallace import processes
 from wallace.transformations import Mutation, Observation
@@ -194,8 +193,7 @@ class RogersAgent(Agent):
             # Register the transformation.
             Mutation(
                 info_out=info_out,
-                info_in=info_in,
-                node=self)
+                info_in=info_in)
 
         else:
             self.replicate(info_in)
@@ -248,5 +246,4 @@ class RogersEnvironment(Environment):
             contents=str(1 - float(current_state.contents)))
         Mutation(
             info_out=new_state,
-            info_in=current_state,
-            node=self)
+            info_in=current_state)
