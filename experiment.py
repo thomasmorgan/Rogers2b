@@ -5,7 +5,8 @@ from wallace.information import Gene, Meme, State
 from wallace.nodes import Source, Agent, Environment
 from wallace.networks import DiscreteGenerational
 from wallace import processes
-from wallace.transformations import Mutation, Observation
+from wallace import transformations
+from wallace.transformations import Observation
 import math
 import random
 
@@ -184,19 +185,9 @@ class RogersAgent(Agent):
     def mutate(self, info_in):
         # If mutation is happening...
         if random.random() < 0.10:
-
-            # Create a new info based on the old one.
-            strats = ["social", "asocial"]
-            new_contents = strats[not strats.index(info_in.contents)]
-            info_out = LearningGene(origin=self, contents=new_contents)
-
-            # Register the transformation.
-            Mutation(
-                info_out=info_out,
-                info_in=info_in)
-
+            transformations.mutate(node=self, info_in=info_in, alleles=["social", "asocial"])
         else:
-            self.replicate(info_in)
+            transformations.replicate(node=self, info_in=info_in)
 
     def update(self, infos):
         for info_in in infos:
@@ -209,7 +200,7 @@ class RogersAgentFounder(RogersAgent):
     __mapper_args__ = {"polymorphic_identity": "rogers_agent_founder"}
 
     def mutate(self, info_in):
-        self.replicate(info_in)
+        transformations.replicate(node=self, info_in=info_in)
 
 
 class SuccessfulObservation(Observation):
@@ -240,10 +231,5 @@ class RogersEnvironment(Environment):
     def step(self):
 
         current_state = self.infos(type=State)[-1]
-        new_state = State(
-            origin=self,
-            origin_uuid=self.uuid,
-            contents=str(1 - float(current_state.contents)))
-        Mutation(
-            info_out=new_state,
-            info_in=current_state)
+        current_contents = float(current_state.contents)
+        transformations.mutate(node=self, info_in=current_state, alleles=[1-current_contents])
