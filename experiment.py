@@ -1,18 +1,20 @@
 """Replicate Rogers' paradox by simulating evolution with people."""
 
-from wallace.environments import Environment
 from wallace.experiments import Experiment
 from wallace.information import Gene, Meme, State
-from wallace.models import Source, Agent, Node, Network
+from wallace.nodes import Source, Agent, Environment
 from wallace.networks import DiscreteGenerational
 from wallace import processes
-from wallace.transformations import Mutation, Observation
+from wallace import transformations
 import math
 import random
 
 
 class LearningGene(Gene):
     __mapper_args__ = {"polymorphic_identity": "learning_gene"}
+
+    def _mutated_contents(self):
+        return random.choice([a for a in ["social", "asocial"] if a != self.contents])
 
 
 class RogersExperiment(Experiment):
@@ -21,22 +23,27 @@ class RogersExperiment(Experiment):
         super(RogersExperiment, self).__init__(session)
 
         self.task = "Rogers network game"
-        self.experiment_repeats = 8
-        self.practice_repeats = 4
+        self.experiment_repeats = 2
+        self.practice_repeats = 0
         # note that catch repeats are a subset of experiment repeats!
-        self.catch_repeats = 4
+        self.catch_repeats = 1
         self.practice_difficulty = 0.80
         self.difficulties = [0.50, 0.525, 0.55, 0.575, 0.60, 0.625, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775]*self.experiment_repeats
         self.catch_difficulty = 0.80
         self.min_acceptable_performance = 0.5
-        self.network = lambda: DiscreteGenerational(generations=4, generation_size=4, initial_source=True)
+        self.network = lambda: DiscreteGenerational(generations=1, generation_size=4, initial_source=True)
         self.environment_type = RogersEnvironment
         self.bonus_payment = 10.00
 
-        self.setup()
+        if not self.networks():
+            self.setup()
 
-        for _ in range(self.catch_repeats):
-            random.choice(self.networks(role="experiment")).role = "catch"
+    def setup(self):
+        super(RogersExperiment, self).setup()
+
+        if not self.networks(role="catch"):
+            for _ in range(self.catch_repeats):
+                random.choice(self.networks(role="experiment")).role = "catch"
 
         # Setup for first time experiment is accessed
 
@@ -46,22 +53,20 @@ class RogersExperiment(Experiment):
                 net.add(source)
                 self.save(source)
                 source.create_information()
-
-        for net in self.networks(role="practice"):
-            environment = RogersEnvironment(proportion=self.practice_difficulty)
-            net.add(environment)
-            self.save(environment)
-
-        for net in self.networks(role="catch"):
-            environment = RogersEnvironment(proportion=self.catch_difficulty)
-            net.add(environment)
-            self.save(environment)
-
-        exp_nets = self.networks(role="experiment")
-        for i in range(len(exp_nets)):
-            environment = RogersEnvironment(proportion=self.difficulties[i])
-            exp_nets[i].add(environment)
-            self.save(environment)
+            if not net.nodes(type=Environment):
+                if net.role == "practice":
+                    environment = RogersEnvironment(proportion=self.practice_difficulty)
+                    net.add(environment)
+                    self.save(environment)
+                if net.role == "catch":
+                    environment = RogersEnvironment(proportion=self.catch_difficulty)
+                    net.add(environment)
+                    self.save(environment)
+                if net.role == "experiment":
+                    difficulty = self.difficulties[self.networks(role="experiment").index(net)]
+                    environment = RogersEnvironment(proportion=difficulty)
+                    net.add(environment)
+                    self.save(environment)
 
     def agent(self, network=None):
         if network.role == "practice" or network.role == "catch":
@@ -182,46 +187,23 @@ class RogersAgent(Agent):
         state = self.neighbors(connection="from", type=Environment)[0].state(time=meme.creation_time)
         return float(meme.contents) == round(float(state.contents))
 
-    def mutate(self, info_in):
-        # If mutation is happening...
-        if random.random() < 0.10:
-
-            # Create a new info based on the old one.
-            strats = ["social", "asocial"]
-            new_contents = strats[not strats.index(info_in.contents)]
-            info_out = LearningGene(origin=self, contents=new_contents)
-
-            # Register the transformation.
-            Mutation(
-                info_out=info_out,
-                info_in=info_in,
-                node=self)
-
-        else:
-            self.replicate(info_in)
-
     def update(self, infos):
         for info_in in infos:
             if isinstance(info_in, LearningGene):
-                self.mutate(info_in)
+                if random.random() < 0.10:
+                    self.mutate(info_in)
+                else:
+                    self.replicate(info_in)
 
 
 class RogersAgentFounder(RogersAgent):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_agent_founder"}
 
-    def mutate(self, info_in):
-        self.replicate(info_in)
-
-
-class SuccessfulObservation(Observation):
-
-    __mapper_args__ = {"polymorphic_identity": "observation_successful"}
-
-
-class FailedObservation(Observation):
-
-    __mapper_args__ = {"polymorphic_identity": "observation_failed"}
+    def update(self, infos):
+        for info in infos:
+            if isinstance(info, LearningGene):
+                self.replicate(info)
 
 
 class RogersEnvironment(Environment):
@@ -242,11 +224,7 @@ class RogersEnvironment(Environment):
     def step(self):
 
         current_state = self.infos(type=State)[-1]
-        new_state = State(
-            origin=self,
-            origin_uuid=self.uuid,
-            contents=str(1 - float(current_state.contents)))
-        Mutation(
-            info_out=new_state,
-            info_in=current_state,
-            node=self)
+        current_contents = float(current_state.contents)
+        new_contents = 1-current_contents
+        info_out = State(origin=self, contents=new_contents)
+        transformations.Mutation(info_in=current_state, info_out=info_out)
