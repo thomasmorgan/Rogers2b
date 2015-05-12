@@ -10,30 +10,23 @@ import math
 import random
 
 
-class LearningGene(Gene):
-    __mapper_args__ = {"polymorphic_identity": "learning_gene"}
-
-    def _mutated_contents(self):
-        return random.choice([a for a in ["social", "asocial"] if a != self.contents])
-
-
 class RogersExperiment(Experiment):
 
     def __init__(self, session):
         super(RogersExperiment, self).__init__(session)
 
         self.task = "Rogers network game"
-        self.experiment_repeats = 2
-        self.practice_repeats = 0
-        # note that catch repeats are a subset of experiment repeats!
-        self.catch_repeats = 1
+        self.experiment_repeats = 120
+        self.practice_repeats = 5
+        self.catch_repeats = 0  # a subset of experiment repeats
         self.practice_difficulty = 0.80
         self.difficulties = [0.50, 0.525, 0.55, 0.575, 0.60, 0.625, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775]*self.experiment_repeats
         self.catch_difficulty = 0.80
         self.min_acceptable_performance = 0.5
-        self.network = lambda: DiscreteGenerational(generations=1, generation_size=4, initial_source=True)
+        self.network = lambda: DiscreteGenerational(
+            generations=1, generation_size=10, initial_source=True)
         self.environment_type = RogersEnvironment
-        self.bonus_payment = 10.00
+        self.bonus_payment = 0
 
         if not self.networks():
             self.setup()
@@ -46,7 +39,6 @@ class RogersExperiment(Experiment):
                 random.choice(self.networks(role="experiment")).role = "catch"
 
         # Setup for first time experiment is accessed
-
         for net in self.networks():
             if not net.nodes(type=Source):
                 source = RogersSource()
@@ -109,7 +101,6 @@ class RogersExperiment(Experiment):
             t.destination.update([t.info])
 
     def information_creation_trigger(self, info):
-
         agent = info.origin
         agent.calculate_fitness()
         self.save(agent)
@@ -131,14 +122,24 @@ class RogersExperiment(Experiment):
     def participant_attention_check(self, participant_uuid=None):
         participant_nodes = [net.nodes(participant_uuid=participant_uuid)[0] for net in self.networks(role="catch")]
         scores = [n.score() for n in participant_nodes]
+
         if participant_nodes:
             avg = sum(scores)/float(len(scores))
         else:
             avg = 1.0
+
         if avg < self.min_acceptable_performance:
             for net in self.networks():
                 for node in net.nodes(participant_uuid=participant_uuid):
                     node.fail()
+
+
+class LearningGene(Gene):
+    __mapper_args__ = {"polymorphic_identity": "learning_gene"}
+
+    def _mutated_contents(self):
+        alleles = ["social", "asocial"]
+        return random.choice([a for a in alleles if a != self.contents])
 
 
 class RogersSource(Source):
