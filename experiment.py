@@ -6,13 +6,15 @@ from wallace.nodes import Source, Agent, Environment
 from wallace.networks import DiscreteGenerational
 from wallace import processes
 from wallace import transformations
-from wallace.transformations import Observation
 import math
 import random
 
 
 class LearningGene(Gene):
     __mapper_args__ = {"polymorphic_identity": "learning_gene"}
+
+    def _mutated_contents(self):
+        return random.choice([a for a in ["social", "asocial"] if a != self.contents])
 
 
 class RogersExperiment(Experiment):
@@ -182,35 +184,23 @@ class RogersAgent(Agent):
         state = self.neighbors(connection="from", type=Environment)[0].state(time=meme.creation_time)
         return float(meme.contents) == round(float(state.contents))
 
-    def mutate(self, info_in):
-        # If mutation is happening...
-        if random.random() < 0.10:
-            transformations.mutate(node=self, info_in=info_in, alleles=["social", "asocial"])
-        else:
-            transformations.replicate(node=self, info_in=info_in)
-
     def update(self, infos):
         for info_in in infos:
             if isinstance(info_in, LearningGene):
-                self.mutate(info_in)
+                if random.random() < 0.10:
+                    self.mutate(info_in)
+                else:
+                    self.replicate(info_in)
 
 
 class RogersAgentFounder(RogersAgent):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_agent_founder"}
 
-    def mutate(self, info_in):
-        transformations.replicate(node=self, info_in=info_in)
-
-
-class SuccessfulObservation(Observation):
-
-    __mapper_args__ = {"polymorphic_identity": "observation_successful"}
-
-
-class FailedObservation(Observation):
-
-    __mapper_args__ = {"polymorphic_identity": "observation_failed"}
+    def update(self, infos):
+        for info in infos:
+            if isinstance(info, LearningGene):
+                self.replicate(info)
 
 
 class RogersEnvironment(Environment):
@@ -232,4 +222,6 @@ class RogersEnvironment(Environment):
 
         current_state = self.infos(type=State)[-1]
         current_contents = float(current_state.contents)
-        transformations.mutate(node=self, info_in=current_state, alleles=[1-current_contents])
+        new_contents = 1-current_contents
+        info_out = State(origin=self, contents=new_contents)
+        transformations.Mutation(info_in=current_state, info_out=info_out)
