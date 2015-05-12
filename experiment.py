@@ -23,22 +23,27 @@ class RogersExperiment(Experiment):
         super(RogersExperiment, self).__init__(session)
 
         self.task = "Rogers network game"
-        self.experiment_repeats = 8
-        self.practice_repeats = 4
+        self.experiment_repeats = 2
+        self.practice_repeats = 0
         # note that catch repeats are a subset of experiment repeats!
-        self.catch_repeats = 4
+        self.catch_repeats = 1
         self.practice_difficulty = 0.80
         self.difficulties = [0.50, 0.525, 0.55, 0.575, 0.60, 0.625, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775]*self.experiment_repeats
         self.catch_difficulty = 0.80
         self.min_acceptable_performance = 0.5
-        self.network = lambda: DiscreteGenerational(generations=4, generation_size=4, initial_source=True)
+        self.network = lambda: DiscreteGenerational(generations=1, generation_size=4, initial_source=True)
         self.environment_type = RogersEnvironment
         self.bonus_payment = 10.00
 
-        self.setup()
+        if not self.networks():
+            self.setup()
 
-        for _ in range(self.catch_repeats):
-            random.choice(self.networks(role="experiment")).role = "catch"
+    def setup(self):
+        super(RogersExperiment, self).setup()
+
+        if not self.networks(role="catch"):
+            for _ in range(self.catch_repeats):
+                random.choice(self.networks(role="experiment")).role = "catch"
 
         # Setup for first time experiment is accessed
 
@@ -48,22 +53,20 @@ class RogersExperiment(Experiment):
                 net.add(source)
                 self.save(source)
                 source.create_information()
-
-        for net in self.networks(role="practice"):
-            environment = RogersEnvironment(proportion=self.practice_difficulty)
-            net.add(environment)
-            self.save(environment)
-
-        for net in self.networks(role="catch"):
-            environment = RogersEnvironment(proportion=self.catch_difficulty)
-            net.add(environment)
-            self.save(environment)
-
-        exp_nets = self.networks(role="experiment")
-        for i in range(len(exp_nets)):
-            environment = RogersEnvironment(proportion=self.difficulties[i])
-            exp_nets[i].add(environment)
-            self.save(environment)
+            if not net.nodes(type=Environment):
+                if net.role == "practice":
+                    environment = RogersEnvironment(proportion=self.practice_difficulty)
+                    net.add(environment)
+                    self.save(environment)
+                if net.role == "catch":
+                    environment = RogersEnvironment(proportion=self.catch_difficulty)
+                    net.add(environment)
+                    self.save(environment)
+                if net.role == "experiment":
+                    difficulty = self.difficulties[self.networks(role="experiment").index(net)]
+                    environment = RogersEnvironment(proportion=difficulty)
+                    net.add(environment)
+                    self.save(environment)
 
     def agent(self, network=None):
         if network.role == "practice" or network.role == "catch":
