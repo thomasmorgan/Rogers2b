@@ -199,10 +199,10 @@ class TestRogers(object):
         for network in exp.networks():
             agents = network.nodes(type=Agent)
             for agent in agents:
-                in_ts = agent.transmissions(direction="incoming", state="received")
+                in_ts = agent.transmissions(direction="incoming", status="received")
                 types = [type(t.info) for t in in_ts]
                 assert len(in_ts) == 2
-                assert len(agent.transmissions(direction="incoming", state="pending")) == 0
+                assert len(agent.transmissions(direction="incoming", status="pending")) == 0
                 if agent.infos(type=LearningGene)[0].contents == "asocial":
                     assert State in types
                     assert LearningGene in types
