@@ -63,7 +63,9 @@ var StroopExperiment = function() {
             type: 'json',
             success: function (resp) {
                 agent_uuid = resp.agents.uuid;
-                getAllInformation(agent_uuid);
+                setTimeout(function () {
+                    getAllInformation(agent_uuid);
+                }, 500);
             },
             error: function (err) {
                 currentview = new Questionnaire();
