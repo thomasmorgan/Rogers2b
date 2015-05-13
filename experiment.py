@@ -69,12 +69,15 @@ class RogersExperiment(Experiment):
             return RogersAgent
 
     def create_agent_trigger(self, agent, network):
+        num_agents = len(network.nodes(type=Agent))
+
         network.add_agent(agent)
         network.nodes(type=Environment)[0].connect_to(agent)
-        current_generation = int(math.floor((len(network.nodes(type=Agent))*1.0-1)/network.generation_size))
+        current_generation = int((num_agents-1)/float(network.generation_size))
 
-        if ((len(network.nodes(type=Agent)) % network.generation_size == 1)
-                & (current_generation % 10 == 0)):
+        if (num_agents % network.generation_size == 1
+                and current_generation % 10 == 0
+                and current_generation != 0):
             network.nodes(type=Environment)[0].step()
 
         if (current_generation == 0):
