@@ -5,6 +5,13 @@ from wallace.nodes import Agent, Source, Environment
 from wallace.information import Gene, Meme, State
 from experiment import RogersExperiment, RogersAgent, RogersAgentFounder, RogersSource, RogersEnvironment, LearningGene
 import random
+import traceback
+from datetime import datetime
+
+
+def timenow():
+    """A string representing the current date and time."""
+    return datetime.now()
 
 
 class TestRogers(object):
@@ -27,12 +34,24 @@ class TestRogers(object):
         SIMULATE ROGERS
         """
 
+        overall_start_time = timenow()
+
         print("Running simulated experiment...", end="\r")
         sys.stdout.flush()
 
+        exp_setup_start = timenow()
         exp = RogersExperiment(self.db)
+        exp_setup_stop = timenow()
+
+        exp_setup_start2 = timenow()
+        exp = RogersExperiment(self.db)
+        exp_setup_stop2 = timenow()
 
         p_uuids = []
+        p_times = []
+        dum = timenow()
+        assign_time = dum - dum
+        process_time = dum - dum
 
         while not exp.is_experiment_over():
 
@@ -46,30 +65,42 @@ class TestRogers(object):
 
             p_uuid = str(random.random())
             p_uuids.append(p_uuid)
+            p_start_time = timenow()
 
             while True:
                 try:
+                    assign_start_time = timenow()
                     agent = exp.assign_agent_to_participant(participant_uuid=p_uuid)
+                    assign_stop_time = timenow()
+                    assign_time += (assign_stop_time - assign_start_time)
                 except:
+                    # print(traceback.format_exc())
                     break
                 else:
-                    transmission = agent.transmissions(state="pending", direction="incoming")[0]
-                    agent.receive(transmission)
+                    process_start_time = timenow()
+                    agent.receive()
                     current_state = float(agent.neighbors(connection="from", type=Environment)[0].infos(type=State)[-1].contents)
                     if num_completed_participants == 0:
                         Meme(origin=agent, contents=round(current_state))
                     else:
                         Meme(origin=agent, contents=random.choice([0, 1]))
-                    #agent.receive()
                     agent.calculate_fitness()
+                    process_stop_time = timenow()
+                    process_time += (process_stop_time - process_start_time)
             bonus = exp.bonus(participant_uuid=p_uuid)
             assert bonus >= 0.0
             assert bonus <= exp.bonus_payment
 
             exp.participant_attention_check(participant_uuid=p_uuid)
+            p_stop_time = timenow()
+            p_times.append(p_stop_time - p_start_time)
 
         print("Running simulated experiment...      done!                                      ")
         sys.stdout.flush()
+
+        overall_stop_time = timenow()
+
+        assert len(exp.networks()) == exp.practice_repeats + exp.experiment_repeats
 
         """
         TEST NODES
@@ -163,6 +194,7 @@ class TestRogers(object):
         """
 
         print("Testing transmissions...", end="\r")
+        sys.stdout.flush()
 
         for network in exp.networks():
             agents = network.nodes(type=Agent)
@@ -187,6 +219,7 @@ class TestRogers(object):
         """
 
         print("Testing fitness...", end="\r")
+        sys.stdout.flush()
 
         p0_nodes = [n.nodes(participant_uuid=p_uuids[0])[0] for n in exp.networks()]
 
@@ -205,15 +238,29 @@ class TestRogers(object):
                 assert agent.fitness == ((baseline + agent.score()*b - is_asocial*c) ** e)
 
         print("Testing fitness...                   done!")
+        sys.stdout.flush()
 
         """
         TEST BONUS
         """
 
         print("Testing bonus payments...", end="\r")
+        sys.stdout.flush()
 
         assert exp.bonus(participant_uuid=p_uuids[0]) == exp.bonus_payment
 
         print("Testing bonus payments...            done!")
+        sys.stdout.flush()
 
         print("All tests passed: good job!")
+
+        print("Test timings:")
+        overall_time = overall_stop_time - overall_start_time
+        print("Overall time to simulate experiment: {}".format(overall_time))
+        setup_time = exp_setup_stop - exp_setup_start
+        print("Experiment setup(): {}".format(setup_time))
+        print("Experiment load: {}".format(exp_setup_stop2 - exp_setup_start2))
+        print("Participant assignment: {}".format(assign_time))
+        print("Node processing: {}".format(process_time))
+        for x in range(len(p_times)):
+            print("Participant {}: {}".format(x, p_times[x]))
