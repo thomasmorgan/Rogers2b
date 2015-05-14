@@ -83,7 +83,7 @@ class RogersExperiment(Experiment):
         if (current_generation == 0):
             network.nodes(type=Source)[0].transmit(to_whom=agent)
         else:
-            processes.transmit_by_fitness(to_whom=agent, what=Gene, from_whom=Agent)
+            processes.transmit_by_fitness(from_whom=agent.neighbors(connection="from", type=Agent), to_whom=agent, what=Gene)
 
         agent.receive()
 
