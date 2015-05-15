@@ -69,7 +69,8 @@ class RogersExperiment(Experiment):
             return RogersAgent
 
     def create_agent_trigger(self, agent, network):
-        num_agents = len(network.nodes(type=Agent))
+        agents = network.nodes(type=Agent)
+        num_agents = len(agents)
 
         network.add_agent(agent)
         network.nodes(type=Environment)[0].connect_to(agent)

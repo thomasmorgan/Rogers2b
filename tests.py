@@ -80,7 +80,6 @@ class TestRogers(object):
                     process_start_time = timenow()
                     agent.receive()
                     current_state = float(agent.network.nodes(type=Environment)[0].infos(type=State)[-1].contents)
-                    #current_state = float(agent.neighbors(connection="from", type=Environment)[0].infos(type=State)[-1].contents)
                     if num_completed_participants == 0:
                         Meme(origin=agent, contents=round(current_state))
                     else:
