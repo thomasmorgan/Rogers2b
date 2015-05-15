@@ -34,8 +34,8 @@ class RogersExperiment(Experiment):
         super(RogersExperiment, self).setup()
 
         if not self.networks(role="catch"):
-            for _ in range(self.catch_repeats):
-                random.choice(self.networks(role="experiment")).role = "catch"
+            for net in random.sample(self.networks(role="experiment"), self.catch_repeats):
+                net.role = "catch"
 
         # Setup for first time experiment is accessed
         for net in self.networks():
