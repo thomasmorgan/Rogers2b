@@ -6,7 +6,6 @@ from wallace.nodes import Source, Agent, Environment
 from wallace.networks import DiscreteGenerational
 from wallace import processes
 from wallace import transformations
-import math
 import random
 
 

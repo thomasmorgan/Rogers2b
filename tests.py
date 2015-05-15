@@ -68,12 +68,11 @@ class TestRogers(object):
             p_start_time = timenow()
 
             while True:
-                try:
-                    assign_start_time = timenow()
-                    agent = exp.assign_agent_to_participant(participant_uuid=p_uuid)
-                    assign_stop_time = timenow()
-                    assign_time += (assign_stop_time - assign_start_time)
-                except:
+                assign_start_time = timenow()
+                agent = exp.assign_agent_to_participant(participant_uuid=p_uuid)
+                assign_stop_time = timenow()
+                assign_time += (assign_stop_time - assign_start_time)
+                if agent is None:
                     # print(traceback.format_exc())
                     break
                 else:
