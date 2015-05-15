@@ -79,11 +79,12 @@ class TestRogers(object):
                 else:
                     process_start_time = timenow()
                     agent.receive()
-                    current_state = float(agent.neighbors(connection="from", type=Environment)[0].infos(type=State)[-1].contents)
+                    current_state = float(agent.network.nodes(type=Environment)[0].infos(type=State)[-1].contents)
+                    #current_state = float(agent.neighbors(connection="from", type=Environment)[0].infos(type=State)[-1].contents)
                     if num_completed_participants == 0:
                         Meme(origin=agent, contents=round(current_state))
                     else:
-                        Meme(origin=agent, contents=random.choice([0, 1]))
+                        Meme(origin=agent, contents=1)
                     agent.calculate_fitness()
                     process_stop_time = timenow()
                     process_time += (process_stop_time - process_start_time)
