@@ -40,23 +40,19 @@ class RogersExperiment(Experiment):
         # Setup for first time experiment is accessed
         for net in self.networks():
             if not net.nodes(type=Source):
-                source = RogersSource()
-                net.add(source)
+                source = RogersSource(network_uuid=net.uuid)
                 self.save(source)
                 source.create_information()
             if not net.nodes(type=Environment):
                 if net.role == "practice":
-                    environment = RogersEnvironment(proportion=self.practice_difficulty)
-                    net.add(environment)
+                    environment = RogersEnvironment(proportion=self.practice_difficulty, network_uuid=net.uuid)
                     self.save(environment)
                 if net.role == "catch":
-                    environment = RogersEnvironment(proportion=self.catch_difficulty)
-                    net.add(environment)
+                    environment = RogersEnvironment(proportion=self.catch_difficulty, network_uuid=net.uuid)
                     self.save(environment)
                 if net.role == "experiment":
                     difficulty = self.difficulties[self.networks(role="experiment").index(net)]
-                    environment = RogersEnvironment(proportion=difficulty)
-                    net.add(environment)
+                    environment = RogersEnvironment(proportion=difficulty, network_uuid=net.uuid)
                     self.save(environment)
 
     def agent(self, network=None):
@@ -218,8 +214,9 @@ class RogersEnvironment(Environment):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_environment"}
 
-    def __init__(self, proportion=None):
+    def __init__(self, network_uuid, proportion=None):
 
+        self.network_uuid = network_uuid
         if proportion is None:
             raise(ValueError("You need to pass RogersEnvironment a proprtion when you make it."))
         elif random.random() < 0.5:
