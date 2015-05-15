@@ -79,12 +79,11 @@ class TestRogers(object):
                 else:
                     process_start_time = timenow()
                     agent.receive()
-                    current_state = float(agent.network.nodes(type=Environment)[0].infos(type=State)[-1].contents)
                     if num_completed_participants == 0:
-                        Meme(origin=agent, contents=round(current_state))
+                        current_state = float(agent.network.nodes(type=Environment)[0].infos(type=State)[-1].contents)
+                        exp.information_creation_trigger(Meme(origin=agent, contents=round(current_state)))
                     else:
-                        Meme(origin=agent, contents=1)
-                    agent.calculate_fitness()
+                        exp.information_creation_trigger(Meme(origin=agent, contents=1))
                     process_stop_time = timenow()
                     process_time += (process_stop_time - process_start_time)
             bonus = exp.bonus(participant_uuid=p_uuid)
@@ -261,6 +260,6 @@ class TestRogers(object):
         print("Experiment setup(): {}".format(setup_time))
         print("Experiment load: {}".format(exp_setup_stop2 - exp_setup_start2))
         print("Participant assignment: {}".format(assign_time))
-        print("Node processing: {}".format(process_time))
-        for x in range(len(p_times)):
-            print("Participant {}: {}".format(x, p_times[x]))
+        print("Participant processing: {}".format(process_time))
+        for i, p in enumerate(p_times):
+            print("Participant {}: {}".format(i, p))

@@ -74,6 +74,7 @@ class RogersExperiment(Experiment):
 
         network.add_agent(agent)
         network.nodes(type=Environment)[0].connect_to(agent)
+
         current_generation = int((num_agents-1)/float(network.generation_size))
 
         if (num_agents % network.generation_size == 1
