@@ -33,27 +33,21 @@ class RogersExperiment(Experiment):
     def setup(self):
         super(RogersExperiment, self).setup()
 
-        if not self.networks(role="catch"):
-            for net in random.sample(self.networks(role="experiment"), self.catch_repeats):
-                net.role = "catch"
+        for net in random.sample(self.networks(role="experiment"), self.catch_repeats):
+            net.role = "catch"
 
-        # Setup for first time experiment is accessed
         for net in self.networks():
-            if not net.nodes(type=Source):
-                source = RogersSource(network_uuid=net.uuid)
-                self.save(source)
-                source.create_information()
-            if not net.nodes(type=Environment):
-                if net.role == "practice":
-                    environment = RogersEnvironment(proportion=self.practice_difficulty, network_uuid=net.uuid)
-                    self.save(environment)
-                if net.role == "catch":
-                    environment = RogersEnvironment(proportion=self.catch_difficulty, network_uuid=net.uuid)
-                    self.save(environment)
-                if net.role == "experiment":
-                    difficulty = self.difficulties[self.networks(role="experiment").index(net)]
-                    environment = RogersEnvironment(proportion=difficulty, network_uuid=net.uuid)
-                    self.save(environment)
+            source = RogersSource(network_uuid=net.uuid)
+            self.save(source)
+            source.create_information()
+            if net.role == "practice":
+                environment = RogersEnvironment(proportion=self.practice_difficulty, network_uuid=net.uuid)
+            if net.role == "catch":
+                environment = RogersEnvironment(proportion=self.catch_difficulty, network_uuid=net.uuid)
+            if net.role == "experiment":
+                difficulty = self.difficulties[self.networks(role="experiment").index(net)]
+                environment = RogersEnvironment(proportion=difficulty, network_uuid=net.uuid)
+            self.save(environment)
 
     def agent(self, network=None):
         if network.role == "practice" or network.role == "catch":
