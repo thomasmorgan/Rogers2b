@@ -83,13 +83,16 @@ class RogersExperiment(Experiment):
         if (current_generation == 0):
             network.nodes(type=Source)[0].transmit(to_whom=agent)
         else:
-            processes.transmit_by_fitness(from_whom=agent.neighbors(connection="from", type=Agent), to_whom=agent, what=Gene)
+            first_index = (current_generation-1)*network.generation_size
+            last_index = first_index+(network.generation_size)
+            prev_agents = agents[first_index:last_index]
+            processes.transmit_by_fitness(from_whom=prev_agents, to_whom=agent, what=Gene)
 
         agent.receive()
 
         gene = agent.infos(type=LearningGene)[0].contents
         if (gene == "social"):
-            random.choice(agent.neighbors(connection="from", type=Agent)).transmit(what=Meme, to_whom=agent)
+            random.choice(prev_agents).transmit(what=Meme, to_whom=agent)
         elif (gene == "asocial"):
             network.nodes(type=Environment)[0].transmit(to_whom=agent)
         else:
