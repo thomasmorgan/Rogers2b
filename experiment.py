@@ -188,7 +188,7 @@ class RogersAgent(Agent):
 
     def score(self):
         meme = self.infos(type=Meme)[0]
-        state = self.neighbors(connection="from", type=Environment)[0].state(time=meme.creation_time)
+        state = self.network.nodes(type=Environment)[0].state(time=meme.creation_time)
         return float(meme.contents) == round(float(state.contents))
 
     def update(self, infos):
