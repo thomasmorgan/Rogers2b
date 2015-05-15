@@ -37,17 +37,15 @@ class RogersExperiment(Experiment):
             net.role = "catch"
 
         for net in self.networks():
-            source = RogersSource(network_uuid=net.uuid)
-            self.save(source)
+            source = RogersSource(network=net)
             source.create_information()
             if net.role == "practice":
-                environment = RogersEnvironment(proportion=self.practice_difficulty, network_uuid=net.uuid)
+                RogersEnvironment(proportion=self.practice_difficulty, network=net)
             if net.role == "catch":
-                environment = RogersEnvironment(proportion=self.catch_difficulty, network_uuid=net.uuid)
+                RogersEnvironment(proportion=self.catch_difficulty, network=net)
             if net.role == "experiment":
                 difficulty = self.difficulties[self.networks(role="experiment").index(net)]
-                environment = RogersEnvironment(proportion=difficulty, network_uuid=net.uuid)
-            self.save(environment)
+                RogersEnvironment(proportion=difficulty, network=net)
 
     def agent(self, network=None):
         if network.role == "practice" or network.role == "catch":
@@ -98,9 +96,7 @@ class RogersExperiment(Experiment):
             t.destination.update([t.info])
 
     def information_creation_trigger(self, info):
-        agent = info.origin
-        agent.calculate_fitness()
-        self.save(agent)
+        info.origin.calculate_fitness()
 
     def bonus(self, participant_uuid=None):
         if participant_uuid is None:
@@ -153,7 +149,6 @@ class RogersSource(Source):
         else:
             LearningGene(
                 origin=self,
-                origin_uuid=self.uuid,
                 contents="asocial")
 
     def _what(self):
@@ -208,16 +203,14 @@ class RogersEnvironment(Environment):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_environment"}
 
-    def __init__(self, network_uuid, proportion=None):
-
-        self.network_uuid = network_uuid
+    def __init__(self, proportion=None, *args, **kwargs):
+        super(RogersEnvironment, self).__init__(*args, **kwargs)
         if proportion is None:
             raise(ValueError("You need to pass RogersEnvironment a proprtion when you make it."))
         elif random.random() < 0.5:
             proportion = 1 - proportion
         State(
             origin=self,
-            origin_uuid=self.uuid,
             contents=proportion)
 
     def step(self):

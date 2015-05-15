@@ -22,7 +22,6 @@ class TestRogers(object):
     def teardown(self):
         self.db.rollback()
         self.db.close()
-        # os.remove('wallace.db')
 
     def add(self, *args):
         self.db.add_all(args)
