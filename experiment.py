@@ -58,14 +58,16 @@ class RogersExperiment(Experiment):
             return RogersAgent
 
     def create_agent_trigger(self, agent, network):
-        agents = network.nodes(type=Agent)
-        num_agents = len(agents)
-
         network.add_agent(agent)
-        environment = Environment.query.filter_by(network_uuid=network.uuid).first()
+        environment = Environment.query.filter_by(network_uuid=network.uuid).all()[0]
         environment.connect_to(agent)
 
+        nuid = network.uuid
+        agents = Agent.query.with_entities(Agent.network_uuid).filter_by(network_uuid=nuid).all()
+        num_agents = len(agents)
+
         current_generation = int((num_agents-1)/float(network.generation_size))
+        agent.set_generation(current_generation)
 
         if (num_agents % network.generation_size == 1
                 and current_generation % 10 == 0
@@ -75,14 +77,12 @@ class RogersExperiment(Experiment):
         if (current_generation == 0):
             network.nodes(type=Source)[0].transmit(to_whom=agent)
         else:
-            first_index = (current_generation-1)*network.generation_size
-            last_index = first_index+(network.generation_size)
-            prev_agents = agents[first_index:last_index]
+            prev_agents = Agent.query.filter_by(network_uuid=nuid, property2=current_generation-1).all()
             processes.transmit_by_fitness(from_whom=prev_agents, to_whom=agent, what=Gene)
 
         agent.receive()
 
-        gene = LearningGene.query.filter_by(origin_uuid=agent.uuid).first().contents
+        gene = LearningGene.query.with_entities(LearningGene.origin_uuid, LearningGene.contents).filter_by(origin_uuid=agent.uuid).all()[-1].contents
         if (gene == "social"):
             random.choice(prev_agents).transmit(what=Meme, to_whom=agent)
         elif (gene == "asocial"):
@@ -161,6 +161,16 @@ class RogersSource(Source):
 class RogersAgent(Agent):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_agent"}
+
+    def set_generation(self, generation):
+        self.property2 = repr(generation)
+
+    @property
+    def generation(self):
+        if self.property2 is None:
+            return None
+        else:
+            return int(self.property2)
 
     def calculate_fitness(self):
 
