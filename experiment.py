@@ -6,6 +6,8 @@ from wallace.nodes import Source, Agent, Environment
 from wallace.networks import DiscreteGenerational
 from wallace import processes
 from wallace import transformations
+from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
+from sqlalchemy import and_
 import random
 
 
@@ -58,16 +60,15 @@ class RogersExperiment(Experiment):
             return RogersAgent
 
     def create_agent_trigger(self, agent, network):
-        network.add_agent(agent)
-        environment = Environment.query.filter_by(network_uuid=network.uuid).all()[0]
-        environment.connect_to(agent)
-
         nuid = network.uuid
         agents = Agent.query.with_entities(Agent.network_uuid).filter_by(network_uuid=nuid).all()
         num_agents = len(agents)
-
         current_generation = int((num_agents-1)/float(network.generation_size))
-        agent.set_generation(current_generation)
+        agent.generation = current_generation
+
+        network.add_agent(agent)
+        environment = Environment.query.filter_by(network_uuid=network.uuid).all()[0]
+        environment.connect_to(agent)
 
         if (num_agents % network.generation_size == 1
                 and current_generation % 10 == 0
@@ -77,7 +78,7 @@ class RogersExperiment(Experiment):
         if (current_generation == 0):
             network.nodes(type=Source)[0].transmit(to_whom=agent)
         else:
-            prev_agents = Agent.query.filter_by(network_uuid=nuid, property2=current_generation-1).all()
+            prev_agents = RogersAgent.query.filter(and_(RogersAgent.network_uuid == network.uuid, RogersAgent.generation == current_generation-1)).all()
             processes.transmit_by_fitness(from_whom=prev_agents, to_whom=agent, what=Gene)
 
         agent.receive()
@@ -162,15 +163,17 @@ class RogersAgent(Agent):
 
     __mapper_args__ = {"polymorphic_identity": "rogers_agent"}
 
-    def set_generation(self, generation):
+    @hybrid_property
+    def generation(self):
+        return int(self.property2)
+
+    @generation.setter
+    def generation(self, generation):
         self.property2 = repr(generation)
 
-    @property
+    @generation.expression
     def generation(self):
-        if self.property2 is None:
-            return None
-        else:
-            return int(self.property2)
+        return self.property2.label('generation')
 
     def calculate_fitness(self):
 
@@ -185,8 +188,7 @@ class RogersAgent(Agent):
         c = 0.3*b
         baseline = c+0.0001
 
-        self.set_fitness(
-            (baseline + matches_environment * b - is_asocial * c) ** e)
+        self.fitness = (baseline + matches_environment * b - is_asocial * c) ** e
 
     def score(self):
         meme = self.infos(type=Meme)[0]
