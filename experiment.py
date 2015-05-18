@@ -33,7 +33,9 @@ class RogersExperiment(Experiment):
     def setup(self):
         super(RogersExperiment, self).setup()
 
-        for net in random.sample(self.networks(role="experiment"), self.catch_repeats):
+        for net in random.sample(DiscreteGenerational.query
+                                 .with_entities(DiscreteGenerational.role)
+                                 .filter_by(role="experiment").all(), self.catch_repeats):
             net.role = "catch"
 
         for net in self.networks():
@@ -50,7 +52,7 @@ class RogersExperiment(Experiment):
     def agent(self, network=None):
         if network.role == "practice" or network.role == "catch":
             return RogersAgentFounder
-        elif len(network.nodes(type=Agent)) < network.generation_size:
+        elif len(Agent.query.with_entities(Agent.network_uuid).filter_by(network_uuid=network.uuid).all()) < network.generation_size:
             return RogersAgentFounder
         else:
             return RogersAgent
@@ -60,14 +62,15 @@ class RogersExperiment(Experiment):
         num_agents = len(agents)
 
         network.add_agent(agent)
-        network.nodes(type=Environment)[0].connect_to(agent)
+        environment = Environment.query.filter_by(network_uuid=network.uuid).first()
+        environment.connect_to(agent)
 
         current_generation = int((num_agents-1)/float(network.generation_size))
 
         if (num_agents % network.generation_size == 1
                 and current_generation % 10 == 0
                 and current_generation != 0):
-            network.nodes(type=Environment)[0].step()
+            environment.step()
 
         if (current_generation == 0):
             network.nodes(type=Source)[0].transmit(to_whom=agent)
@@ -79,11 +82,11 @@ class RogersExperiment(Experiment):
 
         agent.receive()
 
-        gene = agent.infos(type=LearningGene)[0].contents
+        gene = LearningGene.query.filter_by(origin_uuid=agent.uuid).first().contents
         if (gene == "social"):
             random.choice(prev_agents).transmit(what=Meme, to_whom=agent)
         elif (gene == "asocial"):
-            network.nodes(type=Environment)[0].transmit(to_whom=agent)
+            environment.transmit(to_whom=agent)
         else:
             raise ValueError("{} has invalid learning gene value of {}".format(agent, gene))
 

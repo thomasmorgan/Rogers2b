@@ -188,7 +188,7 @@ class TestRogers(object):
             for agent in agents:
                 assert len([v for v in vectors if v.origin_uuid == environment.uuid and v.destination_uuid == agent.uuid]) == 1
 
-            for v in [v for v in vectors if isinstance(v.origin, Source)]:
+            for v in [v for v in vectors if v.origin_uuid == source.uuid]:
                 assert isinstance(v.destination, RogersAgentFounder)
 
         print("Testing vectors...                   done!")
