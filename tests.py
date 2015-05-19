@@ -74,7 +74,6 @@ class TestRogers(object):
                 assign_stop_time = timenow()
                 assign_time += (assign_stop_time - assign_start_time)
                 if agent is None:
-                    # print(traceback.format_exc())
                     break
                 else:
                     process_start_time = timenow()
@@ -154,7 +153,7 @@ class TestRogers(object):
                     assert any([v for v in vectors if v.destination_uuid == agent.uuid and v.origin_uuid == source.uuid])
                     assert any([v for v in vectors if v.destination_uuid == agent.uuid and v.origin_uuid == environment.uuid])
                 else:
-                    assert len([v for v in vectors if v.destination_uuid == agent.uuid]) == 1 + network.generation_size
+                    assert len([v for v in vectors if v.destination_uuid == agent.uuid]) == 2 or len([v for v in vectors if v.destination_uuid == agent.uuid]) == 3
                     assert any([v for v in vectors if v.destination_uuid == agent.uuid and v.origin_uuid == environment.uuid])
                     assert any([v for v in vectors if v.destination_uuid == agent.uuid and (isinstance(v.origin, RogersAgent) or isinstance(v.origin, RogersAgentFounder))])
 
@@ -175,12 +174,11 @@ class TestRogers(object):
             source = [s for s in sourcess if s.network_uuid == network.uuid][0]
             environment = [e for e in environmentss if e.network_uuid == network.uuid][0]
 
-            for gen in range(network.generations-1):
-                for agent in range(network.generation_size):
-                    for other_agent in range(network.generation_size):
-                        assert any([v for v in vectors if
-                                    v.origin_uuid == agents[gen*network.generation_size + agent].uuid and
-                                    v.destination_uuid == agents[(gen+1)*network.generation_size+other_agent].uuid])
+            for v in vectors:
+                if isinstance(v.origin, Agent):
+                    assert v.origin.generation == v.destination.generation - 1
+                else:
+                    assert isinstance(v.origin, Source) or isinstance(v.origin, Environment)
 
             for agent in range(network.generation_size):
                 assert len([v for v in vectors if v.origin_uuid == source.uuid and v.destination_uuid == agents[agent].uuid]) == 1
@@ -316,5 +314,7 @@ class TestRogers(object):
             else:
                 total_time += p_times[i]
             print("Participant {}: {}, total: {}".format(i, p_times[i], total_time))
+
+        print("#########")
         test = [p.total_seconds() for p in p_times]
         print(test)

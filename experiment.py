@@ -78,15 +78,15 @@ class RogersExperiment(Experiment):
 
         if (current_generation == 0):
             network.nodes(type=Source)[0].transmit(to_whom=agent)
-        else:
-            prev_agents = RogersAgent.query.filter(and_(RogersAgent.network_uuid == network.uuid, RogersAgent.generation == current_generation-1)).all()
-            processes.transmit_by_fitness(from_whom=prev_agents, to_whom=agent, what=Gene)
 
         agent.receive()
 
         gene = LearningGene.query.with_entities(LearningGene.origin_uuid, LearningGene.contents).filter_by(origin_uuid=agent.uuid).all()[-1].contents
         if (gene == "social"):
-            random.choice(prev_agents).transmit(what=Meme, to_whom=agent)
+            prev_agents = RogersAgent.query.filter(and_(RogersAgent.network_uuid == network.uuid, RogersAgent.generation == current_generation-1)).all()
+            parent = random.choice(prev_agents)
+            parent.connect(direction="to", other_node=agent)
+            parent.transmit(what=Meme, to_whom=agent)
         elif (gene == "asocial"):
             environment.transmit(to_whom=agent)
         else:
@@ -203,6 +203,9 @@ class RogersAgent(Agent):
                     self.mutate(info_in)
                 else:
                     self.replicate(info_in)
+
+    def _what(self):
+        return self.infos(type=LearningGene)[0]
 
 
 class RogersAgentFounder(RogersAgent):
