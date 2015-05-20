@@ -57,11 +57,19 @@ class TestRogers(object):
 
             num_completed_participants = len(exp.networks()[0].nodes(type=Agent))
 
-            print("Running simulated experiment... participant {} of {}, {} participants failed.".format(
-                num_completed_participants+1,
-                exp.networks()[0].max_size,
-                len(exp.networks()[0].nodes(status="failed"))),
-                end="\r")
+            if p_times:
+                print("Running simulated experiment... participant {} of {}, {} participants failed. Prev time: {}".format(
+                    num_completed_participants+1,
+                    exp.networks()[0].max_size,
+                    len(exp.networks()[0].nodes(status="failed")),
+                    p_times[-1]),
+                    end="\r")
+            else:
+                print("Running simulated experiment... participant {} of {}, {} participants failed.".format(
+                    num_completed_participants+1,
+                    exp.networks()[0].max_size,
+                    len(exp.networks()[0].nodes(status="failed"))),
+                    end="\r")
             sys.stdout.flush()
 
             p_uuid = str(random.random())
@@ -146,9 +154,8 @@ class TestRogers(object):
                 for agent in agents:
                     assert type(agent) in [RogersAgentFounder, RogersAgent]
 
-            for agent in agents:
-                position = agents.index(agent)
-                if position < network.generation_size:
+            for i, agent in enumerate(agents):
+                if i < network.generation_size:
                     assert len([v for v in vectors if v.destination_uuid == agent.uuid]) == 2
                     assert any([v for v in vectors if v.destination_uuid == agent.uuid and v.origin_uuid == source.uuid])
                     assert any([v for v in vectors if v.destination_uuid == agent.uuid and v.origin_uuid == environment.uuid])
