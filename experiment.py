@@ -4,6 +4,7 @@ from wallace.experiments import Experiment
 from wallace.information import Gene, Meme, State
 from wallace.nodes import Source, Agent, Environment
 from wallace.networks import DiscreteGenerational
+from wallace.models import Node, Network
 from wallace import processes
 from wallace import transformations
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
