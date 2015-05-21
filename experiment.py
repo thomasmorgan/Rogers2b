@@ -66,7 +66,7 @@ class RogersExperiment(Experiment):
 
         network.add_agent(agent)
         environment = network.nodes(type=Environment)[0]
-        environment.connect_to(agent)
+        environment.connect(whom=agent)
 
         if (num_agents % network.generation_size == 1
                 and current_generation % 10 == 0
@@ -82,7 +82,7 @@ class RogersExperiment(Experiment):
         if (gene == "social"):
             prev_agents = RogersAgent.query.filter(and_(RogersAgent.network_uuid == network.uuid, RogersAgent.generation == current_generation-1)).all()
             parent = random.choice(prev_agents)
-            parent.connect(direction="to", other_node=agent)
+            parent.connect(direction="to", whom=agent)
             parent.transmit(what=Meme, to_whom=agent)
         elif (gene == "asocial"):
             environment.transmit(to_whom=agent)
