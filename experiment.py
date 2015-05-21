@@ -36,9 +36,7 @@ class RogersExperiment(Experiment):
     def setup(self):
         super(RogersExperiment, self).setup()
 
-        for net in random.sample(DiscreteGenerational.query
-                                 .with_entities(DiscreteGenerational.role)
-                                 .filter_by(role="experiment").all(), self.catch_repeats):
+        for net in random.sample(self.networks(role="experiment"), self.catch_repeats):
             net.role = "catch"
 
         for net in self.networks():
@@ -55,21 +53,18 @@ class RogersExperiment(Experiment):
     def agent(self, network=None):
         if network.role == "practice" or network.role == "catch":
             return RogersAgentFounder
-        elif len(Agent.query.with_entities(Agent.network_uuid).
-                 filter_by(network_uuid=network.uuid, failed=False).all()) < network.generation_size:
+        elif network.size(type=Agent) < network.generation_size:
             return RogersAgentFounder
         else:
             return RogersAgent
 
     def create_agent_trigger(self, agent, network):
-        nuid = network.uuid
-        agents = Agent.query.with_entities(Agent.network_uuid).filter_by(network_uuid=nuid, failed=False).all()
-        num_agents = len(agents)
+        num_agents = network.size(type=Agent)
         current_generation = int((num_agents-1)/float(network.generation_size))
         agent.generation = current_generation
 
         network.add_agent(agent)
-        environment = Environment.query.filter_by(network_uuid=network.uuid).all()[0]
+        environment = network.nodes(type=Environment)[0]
         environment.connect_to(agent)
 
         if (num_agents % network.generation_size == 1
@@ -82,7 +77,7 @@ class RogersExperiment(Experiment):
 
         agent.receive()
 
-        gene = LearningGene.query.with_entities(LearningGene.origin_uuid, LearningGene.contents).filter_by(origin_uuid=agent.uuid).all()[-1].contents
+        gene = agent.infos(type=LearningGene)[0].contents
         if (gene == "social"):
             prev_agents = RogersAgent.query.filter(and_(RogersAgent.network_uuid == network.uuid, RogersAgent.generation == current_generation-1)).all()
             parent = random.choice(prev_agents)
@@ -108,9 +103,7 @@ class RogersExperiment(Experiment):
         if participant_uuid is None:
             raise(ValueError("You must specify the participant_uuid to calculate the bonus."))
 
-        nodes = []
-        for net in self.networks(role="experiment"):
-            nodes += [n for n in net.nodes(participant_uuid=participant_uuid)]
+        nodes = Node.query.join(Node.network).filter(and_(Node.participant_uuid == participant_uuid, Network.role == "experiment")).all()
         if len(nodes) == 0:
             raise(ValueError("Cannot calculate bonus of participant_uuid {} as there are no nodes associated with this uuid".format(participant_uuid)))
         score = [node.score() for node in nodes]
@@ -119,7 +112,7 @@ class RogersExperiment(Experiment):
         return bonus
 
     def participant_attention_check(self, participant_uuid=None):
-        participant_nodes = [net.nodes(participant_uuid=participant_uuid)[0] for net in self.networks(role="catch")]
+        participant_nodes = Node.query.join(Node.network).filter(and_(Node.participant_uuid == participant_uuid, Network.role == "catch")).all()
         scores = [n.score() for n in participant_nodes]
 
         if participant_nodes:
@@ -128,9 +121,8 @@ class RogersExperiment(Experiment):
             avg = 1.0
 
         if avg < self.min_acceptable_performance:
-            for net in self.networks():
-                for node in net.nodes(participant_uuid=participant_uuid):
-                    node.fail()
+            for node in Node.query.filter_by(participant_uuid=participant_uuid).all():
+                node.fail()
 
 
 class LearningGene(Gene):
