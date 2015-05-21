@@ -31,7 +31,7 @@ class RogersExperiment(Experiment):
 
         if not self.networks():
             self.setup()
-            self.save()
+        self.save()
 
     def setup(self):
         super(RogersExperiment, self).setup()
