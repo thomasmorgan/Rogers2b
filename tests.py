@@ -61,14 +61,14 @@ class TestRogers(object):
                 print("Running simulated experiment... participant {} of {}, {} participants failed. Prev time: {}".format(
                     num_completed_participants+1,
                     exp.networks()[0].max_size,
-                    len(exp.networks()[0].nodes(status="failed")),
+                    len(exp.networks()[0].nodes(failed=True)),
                     p_times[-1]),
                     end="\r")
             else:
                 print("Running simulated experiment... participant {} of {}, {} participants failed.".format(
                     num_completed_participants+1,
                     exp.networks()[0].max_size,
-                    len(exp.networks()[0].nodes(status="failed"))),
+                    len(exp.networks()[0].nodes(failed=True))),
                     end="\r")
             sys.stdout.flush()
 

@@ -56,14 +56,14 @@ class RogersExperiment(Experiment):
         if network.role == "practice" or network.role == "catch":
             return RogersAgentFounder
         elif len(Agent.query.with_entities(Agent.network_uuid).
-                 filter_by(network_uuid=network.uuid, status="alive").all()) < network.generation_size:
+                 filter_by(network_uuid=network.uuid, failed=False).all()) < network.generation_size:
             return RogersAgentFounder
         else:
             return RogersAgent
 
     def create_agent_trigger(self, agent, network):
         nuid = network.uuid
-        agents = Agent.query.with_entities(Agent.network_uuid).filter_by(network_uuid=nuid, status="alive").all()
+        agents = Agent.query.with_entities(Agent.network_uuid).filter_by(network_uuid=nuid, failed=False).all()
         num_agents = len(agents)
         current_generation = int((num_agents-1)/float(network.generation_size))
         agent.generation = current_generation
