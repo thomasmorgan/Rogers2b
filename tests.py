@@ -86,11 +86,14 @@ class TestRogers(object):
                 else:
                     process_start_time = timenow()
                     agent.receive()
+                    current_state = float(agent.network.nodes(type=Environment)[0].infos(type=State)[-1].contents)
                     if num_completed_participants == 0:
-                        current_state = float(agent.network.nodes(type=Environment)[0].infos(type=State)[-1].contents)
                         exp.information_creation_trigger(Meme(origin=agent, contents=round(current_state)))
                     else:
-                        exp.information_creation_trigger(Meme(origin=agent, contents=1))
+                        if random.random() < 0.75:
+                            exp.information_creation_trigger(Meme(origin=agent, contents=round(current_state)))
+                        else:
+                            exp.information_creation_trigger(Meme(origin=agent, contents=1-round(current_state)))
                     process_stop_time = timenow()
                     process_time += (process_stop_time - process_start_time)
             bonus = exp.bonus(participant_uuid=p_uuid)
@@ -108,17 +111,6 @@ class TestRogers(object):
 
         assert len(exp.networks()) == exp.practice_repeats + exp.experiment_repeats
 
-        # create lists now for faster testsing:
-        networkss = models.Network.query.all()
-        nodess = models.Node.query.all()
-        agentss = [node for node in nodess if isinstance(node, Agent)]
-        sourcess = [node for node in nodess if isinstance(node, Source)]
-        environmentss = [node for node in nodess if isinstance(node, Environment)]
-        vectorss = models.Vector.query.all()
-        infoss = models.Info.query.all()
-        transmissionss = models.Transmission.query.all()
-        transformationss = models.Transformation.query.all()
-
         """
         TEST NODES
         """
@@ -126,22 +118,22 @@ class TestRogers(object):
         print("Testing nodes...", end="\r")
         sys.stdout.flush()
 
-        for network in [networkss[0]]:
+        for network in [exp.networks()[0]]:
 
-            agents = [a for a in agentss if a.network_uuid == network.uuid]
+            agents = network.nodes(type=Agent)
             assert len(agents) == network.max_size
 
-            source = [s for s in sourcess if s.network_uuid == network.uuid]
+            source = network.nodes(type=Source)
             assert len(source) == 1
             source = source[0]
             assert type(source) == RogersSource
 
-            environment = [e for e in environmentss if e.network_uuid == network.uuid]
+            environment = network.nodes(type=Environment)
             assert len(environment) == 1
             environment = environment[0]
             assert type(environment) == RogersEnvironment
 
-            vectors = [v for v in vectorss if v.network_uuid == network.uuid]
+            vectors = network.vectors()
 
             role = network.role
             if role == "practice":
@@ -174,12 +166,12 @@ class TestRogers(object):
         print("Testing vectors...", end="\r")
         sys.stdout.flush()
 
-        for network in [networkss[0]]:
+        for network in [exp.networks()[0]]:
 
-            agents = [a for a in agentss if a.network_uuid == network.uuid]
-            vectors = [v for v in vectorss if v.network_uuid == network.uuid]
-            source = [s for s in sourcess if s.network_uuid == network.uuid][0]
-            environment = [e for e in environmentss if e.network_uuid == network.uuid][0]
+            agents = network.nodes(type=Agent)
+            vectors = network.vectors()
+            source = network.nodes(type=Source)[0]
+            environment = network.nodes(type=Environment)[0]
 
             for v in vectors:
                 if isinstance(v.origin, Agent):
@@ -206,13 +198,13 @@ class TestRogers(object):
         print("Testing infos...", end="\r")
         sys.stdout.flush()
 
-        for network in [networkss[0]]:
+        for network in [exp.networks()[0]]:
 
-            agents = [a for a in agentss if a.network_uuid == network.uuid]
-            vectors = [v for v in vectorss if v.network_uuid == network.uuid]
-            source = [s for s in sourcess if s.network_uuid == network.uuid][0]
-            environment = [e for e in environmentss if e.network_uuid == network.uuid][0]
-            infos = [i for i in infoss if i.network_uuid == network.uuid]
+            agents = network.nodes(type=Agent)
+            vectors = network.vectors()
+            source = network.nodes(type=Source)[0]
+            environment = network.nodes(type=Environment)[0]
+            infos = network.infos()
 
             for agent in agents:
                 assert len([i for i in infos if i.origin_uuid == agent.uuid]) == 2
@@ -230,15 +222,14 @@ class TestRogers(object):
         print("Testing transmissions...", end="\r")
         sys.stdout.flush()
 
-        for network in [networkss[0]]:
+        for network in [exp.networks()[0]]:
 
-            agents = [a for a in agentss if a.network_uuid == network.uuid]
-            vectors = [v for v in vectorss if v.network_uuid == network.uuid]
-            source = [s for s in sourcess if s.network_uuid == network.uuid][0]
-            environment = [e for e in environmentss if e.network_uuid == network.uuid][0]
-            infos = [i for i in infoss if i.network_uuid == network.uuid]
-            transmissions = [t for t in transmissionss if t.network_uuid == network.uuid]
-            #transformations = [t for t in transformationss if t.network_uuid == network.uuid]
+            agents = network.nodes(type=Agent)
+            vectors = network.vectors()
+            source = network.nodes(type=Source)[0]
+            environment = network.nodes(type=Environment)[0]
+            infos = network.infos()
+            transmissions = network.transmissions()
 
             for agent in agents:
                 in_ts = [t for t in transmissions if t.destination_uuid == agent.uuid]
@@ -269,9 +260,9 @@ class TestRogers(object):
         print("Testing fitness...", end="\r")
         sys.stdout.flush()
 
-        p0_nodes = [n for n in nodess if n.participant_uuid == p_uuids[0]]
+        p0_nodes = models.Node.query.filter_by(participant_uuid=p_uuids[0]).all()
 
-        assert len(p0_nodes) == len(networkss)
+        assert len(p0_nodes) == len(exp.networks())
 
         is_asocial = True
         e = 2
@@ -282,12 +273,12 @@ class TestRogers(object):
         for n in p0_nodes:
             assert n.fitness == (baseline + 1 * b - is_asocial * c) ** e
 
-        for network in [networkss[0]]:
+        for network in [exp.networks()[0]]:
 
-            agents = [a for a in agentss if a.network_uuid == network.uuid]
+            agents = network.nodes(type=Agent)
 
             for agent in agents:
-                is_asocial = [i for i in infoss if i.origin_uuid == agent.uuid and isinstance(i, LearningGene)][0].contents == "asocial"
+                is_asocial = agent.infos(type=LearningGene)[0].contents == "asocial"
                 assert agent.fitness == ((baseline + agent.score()*b - is_asocial*c) ** e)
 
         print("Testing fitness...                   done!")

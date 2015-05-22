@@ -80,7 +80,7 @@ class RogersExperiment(Experiment):
 
         gene = agent.infos(type=LearningGene)[0].contents
         if (gene == "social"):
-            prev_agents = RogersAgent.query.filter(and_(RogersAgent.network_uuid == network.uuid, RogersAgent.generation == current_generation-1)).all()
+            prev_agents = RogersAgent.query.filter(and_(RogersAgent.failed == False, RogersAgent.network_uuid == network.uuid, RogersAgent.generation == current_generation-1)).all()
             parent = random.choice(prev_agents)
             parent.connect(direction="to", whom=agent)
             parent.transmit(what=Meme, to_whom=agent)
@@ -187,7 +187,7 @@ class RogersAgent(Agent):
 
     def score(self):
         meme = self.infos(type=Meme)[0]
-        state = self.network.nodes(type=Environment)[0].state(time=meme.creation_time)
+        state = State.query.filter(and_(State.network_uuid == self.network_uuid, State.creation_time < meme.creation_time)).all()[-1]
         return float(meme.contents) == round(float(state.contents))
 
     def update(self, infos):
