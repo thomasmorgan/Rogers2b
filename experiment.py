@@ -189,7 +189,11 @@ class RogersAgent(Agent):
 
     def score(self):
         meme = self.infos(type=Meme)[0]
-        state = State.query.filter(and_(State.network_uuid == self.network_uuid, State.creation_time < meme.creation_time)).all()[-1]
+        state = State.query\
+            .filter(and_(State.network_uuid == self.network_uuid,
+                         State.creation_time < meme.creation_time))\
+            .order_by(State.creation_time)\
+            .all()[-1]
         return float(meme.contents) == round(float(state.contents))
 
     def update(self, infos):
