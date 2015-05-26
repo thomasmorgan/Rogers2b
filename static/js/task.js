@@ -266,7 +266,7 @@ var StroopExperiment = function() {
                 method: 'post',
                 data: {
                     origin_uuid: agent_uuid,
-                    contents: "0",
+                    contents: "1",
                     info_type: "meme"
                 },
                 success: function (resp) {
@@ -291,7 +291,7 @@ var StroopExperiment = function() {
                 method: 'post',
                 data: {
                     origin_uuid: agent_uuid,
-                    contents: "1",
+                    contents: "0",
                     info_type: "meme"
                 },
                 success: function (resp) {
