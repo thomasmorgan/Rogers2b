@@ -24,7 +24,7 @@ class RogersExperiment(Experiment):
         self.practice_repeats = 5
         self.catch_repeats = 0  # a subset of experiment repeats
         self.practice_difficulty = 0.80
-        self.difficulties = [0.50, 0.525, 0.55, 0.575, 0.60, 0.625, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775]*self.experiment_repeats
+        self.difficulties = [0.50, 0.5125, 0.525, 0.5375, 0.55, 0.5625, 0.575, 0.5875, 0.60, 0.6125, 0.625, 0.6375, 0.65, 0.6625, 0.675, 0.6875, 0.70]*self.experiment_repeats
         self.catch_difficulty = 0.80
         self.min_acceptable_performance = 0.5
         self.network = lambda: DiscreteGenerational(
