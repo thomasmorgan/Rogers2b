@@ -144,17 +144,22 @@ class TestRogers(object):
                     assert type(agent) == RogersAgentFounder
             else:
                 for agent in agents:
-                    assert type(agent) in [RogersAgentFounder, RogersAgent]
+                    if agent.generation == 0:
+                        assert type(agent) == RogersAgentFounder
+                    else:
+                        assert type(agent) == RogersAgent
 
-            for i, agent in enumerate(agents):
-                if i < network.generation_size:
-                    assert len([v for v in vectors if v.destination_uuid == agent.uuid]) == 2
-                    assert any([v for v in vectors if v.destination_uuid == agent.uuid and v.origin_uuid == source.uuid])
-                    assert any([v for v in vectors if v.destination_uuid == agent.uuid and v.origin_uuid == environment.uuid])
+            for agent in agents:
+                if agent.generation == 0:
+                    assert len(agent.vectors(direction="incoming")) == 2
+                    assert agent.is_connected(direction="from", whom=source)
+                    assert agent.is_connected(direction="from", whom=environment)
                 else:
-                    assert len([v for v in vectors if v.destination_uuid == agent.uuid]) == 2 or len([v for v in vectors if v.destination_uuid == agent.uuid]) == 3
-                    assert any([v for v in vectors if v.destination_uuid == agent.uuid and v.origin_uuid == environment.uuid])
-                    assert any([v for v in vectors if v.destination_uuid == agent.uuid and (isinstance(v.origin, RogersAgent) or isinstance(v.origin, RogersAgentFounder))])
+                    assert len(agent.vectors(direction="incoming")) in [2, 3]
+                    assert not agent.is_connected(direction="from", whom=source)
+                    assert agent.is_connected(direction="from", whom=environment)
+                    assert RogersAgent in [type(a) for a in agent.neighbors(connection="from")] or\
+                        RogersAgentFounder in [type(a) for a in agent.neighbors(connection="from")]
 
         print("Testing nodes...                     done!")
         sys.stdout.flush()
@@ -179,8 +184,11 @@ class TestRogers(object):
                 else:
                     assert isinstance(v.origin, Source) or isinstance(v.origin, Environment)
 
-            for agent in range(network.generation_size):
-                assert len([v for v in vectors if v.origin_uuid == source.uuid and v.destination_uuid == agents[agent].uuid]) == 1
+            for agent in agents:
+                if agent.generation == 0:
+                    assert len(models.Vector.query.filter_by(origin_uuid=source.uuid, destination_uuid=agent.uuid).all()) == 1
+                else:
+                    assert len(models.Vector.query.filter_by(origin_uuid=source.uuid, destination_uuid=agent.uuid).all()) == 0
 
             for agent in agents:
                 assert len([v for v in vectors if v.origin_uuid == environment.uuid and v.destination_uuid == agent.uuid]) == 1
@@ -279,7 +287,7 @@ class TestRogers(object):
 
             for agent in agents:
                 is_asocial = agent.infos(type=LearningGene)[0].contents == "asocial"
-                assert agent.fitness == ((baseline + agent.score()*b - is_asocial*c) ** e)
+                assert agent.fitness == ((baseline + agent.score*b - is_asocial*c) ** e)
 
         print("Testing fitness...                   done!")
         sys.stdout.flush()

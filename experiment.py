@@ -81,7 +81,11 @@ class RogersExperiment(Experiment):
 
         gene = agent.infos(type=LearningGene)[0].contents
         if (gene == "social"):
-            prev_agents = RogersAgent.query.filter(and_(RogersAgent.failed == False, RogersAgent.network_uuid == network.uuid, RogersAgent.generation == current_generation-1)).all()
+            prev_agents = RogersAgent.query\
+                .filter(and_(RogersAgent.failed == False,
+                             RogersAgent.network_uuid == network.uuid,
+                             RogersAgent.generation == current_generation-1))\
+                .all()
             parent = random.choice(prev_agents)
             parent.connect(direction="to", whom=agent)
             parent.transmit(what=Meme, to_whom=agent)
@@ -105,17 +109,23 @@ class RogersExperiment(Experiment):
         if participant_uuid is None:
             raise(ValueError("You must specify the participant_uuid to calculate the bonus."))
 
-        nodes = Node.query.join(Node.network).filter(and_(Node.participant_uuid == participant_uuid, Network.role == "experiment")).all()
+        nodes = Node.query.join(Node.network)\
+                    .filter(and_(Node.participant_uuid == participant_uuid,
+                                 Network.role == "experiment"))\
+                    .all()
         if len(nodes) == 0:
             raise(ValueError("Cannot calculate bonus of participant_uuid {} as there are no nodes associated with this uuid".format(participant_uuid)))
-        score = [node.score() for node in nodes]
+        score = [node.score for node in nodes]
         average = float(sum(score))/float(len(score))
         bonus = max(0, ((average-0.5)*2))*self.bonus_payment
         return bonus
 
     def participant_attention_check(self, participant_uuid=None):
-        participant_nodes = Node.query.join(Node.network).filter(and_(Node.participant_uuid == participant_uuid, Network.role == "catch")).all()
-        scores = [n.score() for n in participant_nodes]
+        participant_nodes = Node.query.join(Node.network)\
+                                .filter(and_(Node.participant_uuid == participant_uuid,
+                                             Network.role == "catch"))\
+                                .all()
+        scores = [n.score for n in participant_nodes]
 
         if participant_nodes:
             avg = sum(scores)/float(len(scores))
@@ -144,15 +154,13 @@ class RogersSource(Source):
     """Sets up all the infos for the source to transmit. Every time it is
     called it should make a new info for each of the two genes."""
     def create_information(self):
-        if len(self.infos()) > 1:
-            raise Warning("You should tell a RogersSource to create_information more than once!")
-        else:
+        if len(self.infos()) == 0:
             LearningGene(
                 origin=self,
                 contents="asocial")
 
     def _what(self):
-        return self.infos(type=LearningGene)[-1]
+        return self.infos(type=LearningGene)[0]
 
 
 class RogersAgent(Agent):
@@ -171,29 +179,42 @@ class RogersAgent(Agent):
     def generation(self):
         return cast(self.property2, Integer)
 
+    @hybrid_property
+    def score(self):
+        return int(self.property3)
+
+    @score.setter
+    def score(self, score):
+        self.property3 = repr(score)
+
+    @score.expression
+    def score(self):
+        return cast(self.property3, Integer)
+
     def calculate_fitness(self):
+
+        from operator import attrgetter
 
         if self.fitness is not None:
             raise Exception("You are calculating the fitness of agent {}, ".format(self.uuid) +
                             "but they already have a fitness")
-        matches_environment = self.score()
+        infos = self.infos()
 
-        is_asocial = (self.infos(type=LearningGene)[0].contents == "asocial")
+        meme = float([i for i in infos if isinstance(i, Meme)][0].contents)
+        state = round(float(max(State.query.filter_by(network_uuid=self.network_uuid).all(), key=attrgetter('creation_time')).contents))
+
+        if meme == state:
+            self.score = 1
+        else:
+            self.score = 0
+
+        is_asocial = [i for i in infos if isinstance(i, LearningGene)][0].contents == "asocial"
         e = 2
         b = 1
         c = 0.3*b
         baseline = c+0.0001
 
-        self.fitness = (baseline + matches_environment * b - is_asocial * c) ** e
-
-    def score(self):
-        meme = self.infos(type=Meme)[0]
-        state = State.query\
-            .filter(and_(State.network_uuid == self.network_uuid,
-                         State.creation_time < meme.creation_time))\
-            .order_by(State.creation_time)\
-            .all()[-1]
-        return float(meme.contents) == round(float(state.contents))
+        self.fitness = (baseline + self.score * b - is_asocial * c) ** e
 
     def update(self, infos):
         for info_in in infos:
@@ -233,7 +254,9 @@ class RogersEnvironment(Environment):
 
     def step(self):
 
-        current_state = self.infos(type=State)[-1]
+        from operator import attrgetter
+
+        current_state = max(self.infos(type=State), key=attrgetter('creation_time'))
         current_contents = float(current_state.contents)
         new_contents = 1-current_contents
         info_out = State(origin=self, contents=new_contents)
