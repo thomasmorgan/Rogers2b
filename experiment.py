@@ -6,6 +6,7 @@ from wallace.nodes import Source, Agent, Environment
 from wallace.networks import DiscreteGenerational
 from wallace.models import Node, Network
 from wallace import transformations
+from psiturk.models import Participant
 from sqlalchemy import Integer
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql.expression import cast
@@ -26,8 +27,9 @@ class RogersExperiment(Experiment):
         self.difficulties = [0.50, 0.5125, 0.525, 0.5375, 0.55, 0.5625, 0.575, 0.5875, 0.60, 0.6125, 0.625, 0.6375, 0.65, 0.6625, 0.675, 0.6875, 0.70]*self.experiment_repeats
         self.catch_difficulty = 0.80
         self.min_acceptable_performance = 0.5
+        self.generation_size = 20
         self.network = lambda: DiscreteGenerational(
-            generations=1, generation_size=20, initial_source=True)
+            generations=1, generation_size=self.generation_size, initial_source=True)
         self.environment_type = RogersEnvironment
         self.bonus_payment = 0
 
@@ -105,6 +107,26 @@ class RogersExperiment(Experiment):
     def information_creation_trigger(self, info):
         info.origin.calculate_fitness()
 
+    def recruit(self):
+        """Recruit participants to the experiment as needed."""
+        # If all networks are full, close recruitment.
+        if not self.networks(full=False):
+            self.recruiter().close_recruitment()
+        else:
+            # Figure out if we've filled up the whole generation.
+            at_end_of_generation = all([(net.size(type=Agent) % net.generation_size) == 0 for net in self.networks])
+
+            # Figure out if all the current nodes are associated with
+            # participants who finished the task.
+            nodes = Node.query.with_entities(Node.participant_uuid).filter(Node.failed==False).all()
+            participant_uuids = set([n.participant_uuid for n in nodes])
+            participants = Participant.query.filter(Participant.uuid.in_(participant_uuids)).all()
+            all_nodes_finished = all([p.status >= 4 for p in participants])
+
+            # Recruit a new generation's worth of participants.
+            if at_end_of_generation and all_nodes_finished:
+                self.recruiter().recruit_participants(n=self.generation_size)
+
     def bonus(self, participant_uuid=None):
         if participant_uuid is None:
             raise(ValueError("You must specify the participant_uuid to calculate the bonus."))
@@ -132,9 +154,15 @@ class RogersExperiment(Experiment):
         else:
             avg = 1.0
 
-        if avg < self.min_acceptable_performance:
+        is_passing = avg >= self.min_acceptable_performance
+
+        if not is_passing:
             for node in Node.query.filter_by(participant_uuid=participant_uuid).all():
                 node.fail()
+
+            self.recruiter().recruit_participants(n=1)
+
+        return is_passing
 
 
 class LearningGene(Gene):
