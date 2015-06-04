@@ -109,19 +109,43 @@ class RogersExperiment(Experiment):
 
     def recruit(self):
         """Recruit participants to the experiment as needed."""
+
+        networks = Network.query.with_entities(Network.full).all()
+        agents = RogersAgent.query\
+            .with_entities(RogersAgent.network_uuid, RogersAgent.participant_uuid)\
+            .filter(RogersAgent.failed == False)\
+            .all()
+
         # If all networks are full, close recruitment.
-        if not self.networks(full=False):
+        if all([net.full for net in networks]):
             self.recruiter().close_recruitment()
         else:
-            # Figure out if we've filled up the whole generation.
-            at_end_of_generation = all([(net.size(type=Agent) % net.generation_size) == 0 for net in self.networks])
+            # Determine if the current generation is full
+            at_end_of_generation = all([
+                len([a for a in agents if a.network_uuid == net.uuid])
+                % net.generation_size == 0 for net in networks])
 
-            # Figure out if all the current nodes are associated with
-            # participants who finished the task.
-            nodes = Node.query.with_entities(Node.participant_uuid).filter(Node.failed==False).all()
-            participant_uuids = set([n.participant_uuid for n in nodes])
-            participants = Participant.query.filter(Participant.uuid.in_(participant_uuids)).all()
+            # Figure out if all non-failed participants have finished
+            participant_uuids = set([a.participant_uuid for a in agents])
+            participants = Participant.query\
+                .with_entities(Participant.status)\
+                .filter(Participant.uuid.in_(participant_uuids))\
+                .all()
             all_nodes_finished = all([p.status >= 4 for p in participants])
+
+        # # If all networks are full, close recruitment.
+        # if not self.networks(full=False):
+        #     self.recruiter().close_recruitment()
+        # else:
+        #     # Figure out if we've filled up the whole generation.
+        #     at_end_of_generation = all([(net.size(type=Agent) % net.generation_size) == 0 for net in self.networks])
+
+        #     # Figure out if all the current nodes are associated with
+        #     # participants who finished the task.
+        #     nodes = Node.query.with_entities(Node.participant_uuid).filter(Node.failed==False).all()
+        #     participant_uuids = set([n.participant_uuid for n in nodes])
+        #     participants = Participant.query.filter(Participant.uuid.in_(participant_uuids)).all()
+        #     all_nodes_finished = all([p.status >= 4 for p in participants])
 
             # Recruit a new generation's worth of participants.
             if at_end_of_generation and all_nodes_finished:
