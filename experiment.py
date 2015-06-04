@@ -107,31 +107,19 @@ class RogersExperiment(Experiment):
     def information_creation_trigger(self, info):
         info.origin.calculate_fitness()
 
-    def recruit(self):
-        """Recruit participants to the experiment as needed."""
+    # def recruit(self):
+    #     """Recruit participants to the experiment as needed."""
 
-        networks = Network.query.with_entities(Network.full).all()
-        agents = RogersAgent.query\
-            .with_entities(RogersAgent.network_uuid, RogersAgent.participant_uuid)\
-            .filter(RogersAgent.failed == False)\
-            .all()
+    #     networks = Network.query.with_entities(Network.full).all()
+    #     agents = RogersAgent.query\
+    #         .with_entities(RogersAgent.network_uuid, RogersAgent.participant_uuid)\
+    #         .filter(RogersAgent.failed == False)\
+    #         .all()
 
-        # If all networks are full, close recruitment.
-        if all([net.full for net in networks]):
-            self.recruiter().close_recruitment()
-        else:
-            # Determine if the current generation is full
-            at_end_of_generation = all([
-                len([a for a in agents if a.network_uuid == net.uuid])
-                % net.generation_size == 0 for net in networks])
-
-            # Figure out if all non-failed participants have finished
-            participant_uuids = set([a.participant_uuid for a in agents])
-            participants = Participant.query\
-                .with_entities(Participant.status)\
-                .filter(Participant.uuid.in_(participant_uuids))\
-                .all()
-            all_nodes_finished = all([p.status >= 4 for p in participants])
+    #     # If all networks are full, close recruitment.
+    #     if all([net.full for net in networks]):
+    #         self.recruiter().close_recruitment()
+    #     else:
 
         # # If all networks are full, close recruitment.
         # if not self.networks(full=False):
