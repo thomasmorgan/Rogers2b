@@ -136,8 +136,8 @@ class RogersExperiment(Experiment):
         #     all_nodes_finished = all([p.status >= 4 for p in participants])
 
             # Recruit a new generation's worth of participants.
-            if at_end_of_generation and all_nodes_finished:
-                self.recruiter().recruit_participants(n=self.generation_size)
+            # if at_end_of_generation and all_nodes_finished:
+            #     self.recruiter().recruit_participants(n=self.generation_size)
 
     def bonus(self, participant_uuid=None):
         if participant_uuid is None:
