@@ -7,7 +7,7 @@ from wallace.networks import DiscreteGenerational
 from wallace.models import Node, Network
 from wallace import transformations
 from psiturk.models import Participant
-from sqlalchemy import Integer
+from sqlalchemy import Integer, Float
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql.expression import cast
 from sqlalchemy import and_
@@ -243,6 +243,18 @@ class RogersAgent(Agent):
     def score(self):
         return cast(self.property3, Integer)
 
+    @hybrid_property
+    def proportion(self):
+        return float(self.property4)
+
+    @proportion.setter
+    def proportion(self, proportion):
+        self.property4 = repr(proportion)
+
+    @proportion.expression
+    def proportion(self):
+        return cast(self.property4, Float)
+
     def calculate_fitness(self):
 
         from operator import attrgetter
@@ -253,7 +265,9 @@ class RogersAgent(Agent):
         infos = self.infos()
 
         meme = float([i for i in infos if isinstance(i, Meme)][0].contents)
-        state = round(float(max(State.query.filter_by(network_uuid=self.network_uuid).all(), key=attrgetter('creation_time')).contents))
+        proportion = float(max(State.query.filter_by(network_uuid=self.network_uuid).all(), key=attrgetter('creation_time')).contents)
+        self.proportion = proportion
+        state = round(proportion)
 
         if meme == state:
             self.score = 1
