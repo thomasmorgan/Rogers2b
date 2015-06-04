@@ -32,6 +32,7 @@ class RogersExperiment(Experiment):
             generations=1, generation_size=self.generation_size, initial_source=True)
         self.environment_type = RogersEnvironment
         self.bonus_payment = 0
+        self.initial_recruitment_size = self.generation_size
 
         if not self.networks():
             self.setup()
@@ -106,6 +107,13 @@ class RogersExperiment(Experiment):
 
     def information_creation_trigger(self, info):
         info.origin.calculate_fitness()
+
+    def recruit(self):
+        """Recruit participants to the experiment as needed."""
+        if self.networks(full=False):
+            pass
+        else:
+            self.recruiter().close_recruitment()
 
     # def recruit(self):
     #     """Recruit participants to the experiment as needed."""
