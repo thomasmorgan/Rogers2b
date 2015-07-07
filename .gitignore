@@ -2,3 +2,5 @@
 *.db
 *.log
 .coverage
+data/*
+snapshots/*
