@@ -125,7 +125,7 @@ class RogersExperiment(Experiment):
             self.recruiter().recruit_participants(n=self.generation_size)
         # otherwise do nothing
         else:
-            print "No conditions match, doing nothing."
+            print "Generation not full, doing nothing."
             pass
 
     def bonus(self, participant_uuid=None):
