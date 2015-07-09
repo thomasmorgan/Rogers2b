@@ -12,6 +12,24 @@ body {
   padding-top: 15px;
 }
 
+.stimulus_image {
+  display: block;
+  margin-left: auto;
+  margin-right: auto
+}
+
+.trial_info_text {
+  text-align: right;
+}
+
+.trial_text {
+  text-align: center;
+}
+
+.trial_div {
+  text-align: center;
+}
+
 #more-blue {
   width: 100px;
 }
