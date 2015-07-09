@@ -144,8 +144,14 @@ var StroopExperiment = function() {
 
                 // Show the participant the hint.
                 if (learning_strategy == "social") {
-                    meme = resp.contents;
+
                     $("#instructions").html("Are there more blue or yellow dots?");
+
+                    $("#more-blue").addClass('disabled');
+                    $("#more-yellow").addClass('disabled');
+
+                    meme = resp.contents;
+
                     if (meme == "0") {
                         $("#stimulus").attr("src", "/static/images/blue_social.jpg");
                     } else if (meme == "1") {
@@ -154,7 +160,9 @@ var StroopExperiment = function() {
                     $("#stimulus").show();
                     setTimeout(function() {
                         $("#stimulus").hide();
-                    }, 3000);
+                        $("#more-blue").removeClass('disabled');
+                        $("#more-yellow").removeClass('disabled');
+                    }, 2000);
 
                     lock = false;
                 }
