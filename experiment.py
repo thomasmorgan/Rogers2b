@@ -121,7 +121,7 @@ class RogersExperiment(Experiment):
             print "People are still participating, doing nothing."
             pass
         # else, if the current generation is full, recruit a new generation
-        elif (len(self.networks()[0].nodes()) % self.generation_size) == 0:
+        elif (len(self.networks()[0].nodes(type=Agent)) % self.generation_size) == 0:
             print "End of generation, recruiting another."
             self.recruiter().recruit_participants(n=self.generation_size)
         # otherwise do nothing
