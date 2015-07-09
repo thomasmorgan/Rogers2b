@@ -20,6 +20,7 @@ class RogersExperiment(Experiment):
         super(RogersExperiment, self).__init__(session)
 
         self.task = "Rogers network game"
+        self.verbose = False
         self.experiment_repeats = 120
         self.practice_repeats = 5
         self.catch_repeats = 0  # a subset of experiment repeats
