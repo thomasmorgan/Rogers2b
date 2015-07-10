@@ -158,6 +158,12 @@ class RogersExperiment(Experiment):
         if participant_uuid is None:
             raise(ValueError("You must specify the participant_uuid to calculate the bonus."))
 
+        verbose = self.verbose
+        key = participant_uuid[0:5]
+
+        if verbose:
+            print ">>>>{}     Scoring nodes".format(key)
+
         nodes = Node.query.join(Node.network)\
                     .filter(and_(Node.participant_uuid == participant_uuid,
                                  Network.role == "experiment"))\
@@ -167,9 +173,15 @@ class RogersExperiment(Experiment):
         score = [node.score for node in nodes]
         average = float(sum(score))/float(len(score))
         bonus = max(0, ((average-0.5)*2))*self.bonus_payment
+        if verbose:
+            print ">>>>{}    Bonus is {}".format(key, bonus)
         return bonus
 
     def participant_attention_check(self, participant_uuid=None):
+
+        key = participant_uuid[0:5]
+        verbose = self.verbose
+
         participant_nodes = Node.query.join(Node.network)\
                                 .filter(and_(Node.participant_uuid == participant_uuid,
                                              Network.role == "catch"))\
@@ -177,17 +189,28 @@ class RogersExperiment(Experiment):
         scores = [n.score for n in participant_nodes]
 
         if participant_nodes:
+            if verbose:
+                print ">>>>{}     Scoring participant".format(key)
             avg = sum(scores)/float(len(scores))
         else:
+            if verbose:
+                print ">>>>{}     Participant has no nodes to score!".format(key)
             avg = 1.0
 
         is_passing = avg >= self.min_acceptable_performance
 
         if not is_passing:
+            if verbose:
+                print ">>>>{}     Attention check failed - failing all nodes".format(key)
             for node in Node.query.filter_by(participant_uuid=participant_uuid).all():
                 node.fail()
 
+            if verbose:
+                print ">>>>{}     Recruiting replacement participant".format(key)
             self.recruiter().recruit_participants(n=1)
+        else:
+            if verbose:
+                print ">>>>{}     Attention check passed".format(key)
 
         return is_passing
 
