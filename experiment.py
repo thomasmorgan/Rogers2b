@@ -20,7 +20,7 @@ class RogersExperiment(Experiment):
         super(RogersExperiment, self).__init__(session)
 
         self.task = "Rogers network game"
-        self.verbose = False
+        self.verbose = True
         self.experiment_repeats = 120
         self.practice_repeats = 5
         self.catch_repeats = 0  # a subset of experiment repeats
@@ -65,26 +65,47 @@ class RogersExperiment(Experiment):
             return RogersAgent
 
     def create_agent_trigger(self, agent, network):
+
+        participant = Participant.query.filter_by(uniqueid=agent.participant_uuid).one()
+        key = participant.uniqueid[0:5]
+
         num_agents = network.size(type=Agent)
         current_generation = int((num_agents-1)/float(network.generation_size))
         agent.generation = current_generation
 
+        if self.verbose:
+            print ">>>>{}     Agent is {}th agent in network, assigned to generation {}".format(key, num_agents, current_generation)
+            print ">>>>{}     Adding agent to network.".format(key)
+
         network.add_agent(agent)
+
+        if self.verbose:
+            print ">>>>{}     Agent added to network".format(key)
+
         environment = network.nodes(type=Environment)[0]
         environment.connect(whom=agent)
+
+        if self.verbose:
+            print ">>>>{}     Agent connected to environment".format(key)
 
         if (num_agents % network.generation_size == 1
                 and current_generation % 10 == 0
                 and current_generation != 0):
+            if self.verbose:
+                print ">>>>{}     Environment stepping".format(key)
             environment.step()
 
         if (current_generation == 0):
+            if self.verbose:
+                print ">>>>{}     Agent in generation 0, so Source transmitting to Agent".format(key)
             network.nodes(type=Source)[0].transmit(to_whom=agent)
 
         agent.receive()
 
         gene = agent.infos(type=LearningGene)[0].contents
         if (gene == "social"):
+            if self.verbose:
+                print ">>>>{}     Agent is a social learner, connecting to social parent".format(key)
             prev_agents = RogersAgent.query\
                 .filter(and_(RogersAgent.failed == False,
                              RogersAgent.network_uuid == network.uuid,
@@ -93,7 +114,11 @@ class RogersExperiment(Experiment):
             parent = random.choice(prev_agents)
             parent.connect(direction="to", whom=agent)
             parent.transmit(what=Meme, to_whom=agent)
+            if self.verbose:
+                print ">>>>{}     Parent transmitting meme to Agent".format(key)
         elif (gene == "asocial"):
+            if self.verbose:
+                print ">>>>{}     Agent is an asocial learner, environment transmitting to Agent".format(key)
             environment.transmit(to_whom=agent)
         else:
             raise ValueError("{} has invalid learning gene value of {}".format(agent, gene))
