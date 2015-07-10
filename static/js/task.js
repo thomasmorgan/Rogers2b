@@ -380,9 +380,7 @@ var Questionnaire = function() {
         record_responses();
         psiTurk.saveData({
             success: function(){
-                psiTurk.computeBonus('compute_bonus', function() {
-                    psiTurk.completeHIT(); // when finished saving compute bonus, the quit
-                });
+                psiTurk.completeHIT();
             },
             error: prompt_resubmit});
     });
