@@ -24,7 +24,7 @@ def timenow():
 
 class TestRogers(object):
 
-    autobots = 50
+    autobots = 20
 
     sandbox_output = subprocess.check_output(
         "wallace sandbox",
@@ -42,7 +42,11 @@ class TestRogers(object):
     # methods that defines the behavior of each worker
     def autobot(url, i):
 
+        time.sleep(random.randint(0, 60))
+        print("bot {} starting".format(i))
         start_time = timenow()
+
+        current_trial = 0
 
         # create participant
         headers = {
@@ -62,19 +66,34 @@ class TestRogers(object):
         # work through the trials
         working = True
         while working is True:
-            args = {'unique_id': str(i) + ':' + str(i)}
-            agent = requests.post(url + '/agents', data=args, headers=headers)
-            working = agent.status_code == 200
-            if working is True:
-                agent_uuid = agent.json()['agents']['uuid']
-                args = {'origin_uuid': agent_uuid}
-                requests.get(url + '/information', params=args, headers=headers)
-                args = {'destination_uuid': agent_uuid}
-                transmission = requests.get(url + '/transmissions', params=args, headers=headers)
-                requests.get(url + '/information/' + str(transmission.json()['transmissions'][0]['info_uuid']), params=args, headers=headers)
-                time.sleep(1)
-                args = {'origin_uuid': agent_uuid, 'contents': '0', 'info_type': 'meme'}
-                requests.post(url + '/information', data=args, headers=headers)
+            current_trial += 1
+            agent = None
+            transmission = None
+            information = None
+            information2 = None
+            information3 = None
+            try:
+                args = {'unique_id': str(i) + ':' + str(i)}
+                agent = requests.post(url + '/agents', data=args, headers=headers)
+                working = agent.status_code == 200
+                if working is True:
+                    agent_uuid = agent.json()['agents']['uuid']
+                    args = {'origin_uuid': agent_uuid}
+                    information = requests.get(url + '/information', params=args, headers=headers)
+                    args = {'destination_uuid': agent_uuid}
+                    transmission = requests.get(url + '/transmissions', params=args, headers=headers)
+                    information2 = requests.get(url + '/information/' + str(transmission.json()['transmissions'][0]['info_uuid']), params=args, headers=headers)
+                    time.sleep(1)
+                    args = {'origin_uuid': agent_uuid, 'contents': '0', 'info_type': 'meme'}
+                    information3 = requests.post(url + '/information', data=args, headers=headers)
+            except:
+                print("critical error for bot {}".format(i))
+                print("bot {} is on trial {}".format(i, current_trial))
+                print("bot {} agent request: {}".format(i, agent.text))
+                print("bot {} information request: {}".format(i, information.text))
+                print("bot {} transmission request: {}".format(i, transmission.text))
+                print("bot {} 2nd information request: {}".format(i, information2.text))
+                print("bot {} 3rd information request: {}".format(i, information3.text))
 
         # send AssignmentSubmitted notification
         args = {
@@ -87,7 +106,7 @@ class TestRogers(object):
         print("Bot {} finished in {}".format(i, stop_time - start_time))
         return
 
-    print("giving buffer before starting bots...")
+    print("countdown before starting bots...")
     time.sleep(30)
     print("buffer ended, bots started")
 
@@ -97,7 +116,6 @@ class TestRogers(object):
         t = threading.Thread(target=autobot, args=(url, i, ))
         threads.append(t)
         t.start()
-        time.sleep(5)
 
     # def setup(self):
     #     self.db = db.init_db(drop_all=True)
