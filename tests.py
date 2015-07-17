@@ -42,7 +42,7 @@ class TestRogers(object):
     # methods that defines the behavior of each worker
     def autobot(url, i):
 
-        time.sleep(random.randint(0, 60))
+        time.sleep(i*2)
         print("bot {} starting".format(i))
         start_time = timenow()
 
@@ -89,11 +89,12 @@ class TestRogers(object):
             except:
                 print("critical error for bot {}".format(i))
                 print("bot {} is on trial {}".format(i, current_trial))
-                print("bot {} agent request: {}".format(i, agent.text))
-                print("bot {} information request: {}".format(i, information.text))
-                print("bot {} transmission request: {}".format(i, transmission.text))
-                print("bot {} 2nd information request: {}".format(i, information2.text))
-                print("bot {} 3rd information request: {}".format(i, information3.text))
+                print("bot {} agent request: {}".format(i, agent))
+                print("bot {} information request: {}".format(i, information))
+                print("bot {} transmission request: {}".format(i, transmission))
+                print("bot {} 2nd information request: {}".format(i, information2))
+                print("bot {} 3rd information request: {}".format(i, information3))
+                traceback.print_exc()
 
         # send AssignmentSubmitted notification
         args = {
