@@ -28,9 +28,9 @@ class RogersExperiment(Experiment):
         self.difficulties = [0.50, 0.5125, 0.525, 0.5375, 0.55, 0.5625, 0.575, 0.5875, 0.60, 0.6125, 0.625, 0.6375, 0.65, 0.6625, 0.675, 0.6875, 0.70]*self.experiment_repeats
         self.catch_difficulty = 0.80
         self.min_acceptable_performance = 0.5
-        self.generation_size = 25
+        self.generation_size = 2
         self.network = lambda: DiscreteGenerational(
-            generations=1, generation_size=self.generation_size, initial_source=True)
+            generations=20, generation_size=self.generation_size, initial_source=True)
         self.environment_type = RogersEnvironment
         self.bonus_payment = 0
         self.initial_recruitment_size = self.generation_size
