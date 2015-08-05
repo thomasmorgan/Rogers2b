@@ -183,7 +183,7 @@ class RogersExperiment(Experiment):
 
     def participant_attention_check(self, participant=None):
 
-        key = participant.unqiueid[0:5]
+        key = participant.uniqueid[0:5]
         verbose = self.verbose
 
         participant_nodes = Node.query.join(Node.network)\
