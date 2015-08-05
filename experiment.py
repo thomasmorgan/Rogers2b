@@ -157,11 +157,12 @@ class RogersExperiment(Experiment):
             print "Networks not full, no-one current participating, but generation not full: not recruiting."
             pass
 
-    def bonus(self, participant_uuid=None):
-        if participant_uuid is None:
-            raise(ValueError("You must specify the participant_uuid to calculate the bonus."))
+    def bonus(self, participant=None):
+        if participant is None:
+            raise(ValueError("You must specify the participant to calculate the bonus."))
 
         verbose = self.verbose
+        participant_uuid = participant.uniqueid
         key = participant_uuid[0:5]
 
         if verbose:
@@ -180,13 +181,13 @@ class RogersExperiment(Experiment):
             print ">>>>{}    Bonus is {}".format(key, bonus)
         return bonus
 
-    def participant_attention_check(self, participant_uuid=None):
+    def participant_attention_check(self, participant=None):
 
-        key = participant_uuid[0:5]
+        key = participant.unqiueid[0:5]
         verbose = self.verbose
 
         participant_nodes = Node.query.join(Node.network)\
-                                .filter(and_(Node.participant_uuid == participant_uuid,
+                                .filter(and_(Node.participant_uuid == participant.uniqueid,
                                              Network.role == "catch"))\
                                 .all()
         scores = [n.score for n in participant_nodes]
