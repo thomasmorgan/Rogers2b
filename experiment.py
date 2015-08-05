@@ -201,20 +201,6 @@ class RogersExperiment(Experiment):
             avg = 1.0
 
         is_passing = avg >= self.min_acceptable_performance
-
-        if not is_passing:
-            if verbose:
-                print ">>>>{}     Attention check failed - failing all nodes".format(key)
-            for node in Node.query.filter_by(participant_uuid=participant_uuid).all():
-                node.fail()
-
-            if verbose:
-                print ">>>>{}     Recruiting replacement participant".format(key)
-            self.recruiter().recruit_participants(n=1)
-        else:
-            if verbose:
-                print ">>>>{}     Attention check passed".format(key)
-
         return is_passing
 
 
