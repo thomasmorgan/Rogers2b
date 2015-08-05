@@ -144,12 +144,12 @@ class RogersExperiment(Experiment):
             self.recruiter().close_recruitment()
 
         # if anyone is still working, don't recruit
-        elif [p for p in participants if p.status not in ['submitted', 'failed', 'returned', 'abandoned']]:
+        elif [p for p in participants if p.status < 100]:
             print "Networks not full, but people are still participating: not recruiting."
             pass
 
         # even if no one else is working, we only need to recruit if the current generation is complete
-        elif len([p for p in participants if p.status == 'submitted']) % self.generation_size == 0:
+        elif len([p for p in participants if p.status == 101]) % self.generation_size == 0:
             print "Networks not full, no-one currently participating and at end of generation: recruiting another generation."
             self.recruiter().recruit_participants(n=self.generation_size)
         # otherwise do nothing
