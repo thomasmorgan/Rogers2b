@@ -34,8 +34,6 @@ class TestRogers(object):
     exp_id = m.group(1)
     url = "http://" + exp_id + ".herokuapp.com"
 
-    subprocess.call("heroku ps:scale web=60:standard-2x --app " + exp_id, shell=True)
-
     # Open the logs in the browser.
     subprocess.call(
         "wallace logs --app " + exp_id,
