@@ -135,23 +135,26 @@ class RogersExperiment(Experiment):
         info.origin.calculate_fitness()
 
     def recruit(self):
-        print "Running recruitment logic."
-        # if all networks are full, close recruitment
+        print "Running Rogers recruit()"
+        participants = Participant.query.with_entities(Participant.status).all()
 
+        # if all networks are full, close recruitment,
         if not self.networks(full=False):
-            print "All networks are full, closing."
+            print "All networks are full, closing recruitment."
             self.recruiter().close_recruitment()
-        # else, if participants are still working do nothing
-        elif [p for p in Participant.query.all() if p.status < 5]:
-            print "People are still participating, doing nothing."
+
+        # if anyone is still working, don't recruit
+        elif [p for p in participants if p.status not in ['submitted', 'failed', 'returned', 'abandoned']]:
+            print "Networks not full, but people are still participating: not recruiting."
             pass
-        # else, if the current generation is full, recruit a new generation
-        elif (len(self.networks()[0].nodes(type=Agent)) % self.generation_size) == 0:
-            print "End of generation, recruiting another."
+
+        # even if no one else is working, we only need to recruit if the current generation is complete
+        elif len([p for p in participants if p.status == 'submitted']) % self.generation_size == 0:
+            print "Networks not full, no-one currently participating and at end of generation: recruiting another generation."
             self.recruiter().recruit_participants(n=self.generation_size)
         # otherwise do nothing
         else:
-            print "Generation not full, doing nothing."
+            print "Networks not full, no-one current participating, but generation not full: not recruiting."
             pass
 
     def bonus(self, participant_uuid=None):
