@@ -157,12 +157,11 @@ class RogersExperiment(Experiment):
             print "Networks not full, no-one current participating, but generation not full: not recruiting."
             pass
 
-    def bonus(self, participant=None):
-        if participant is None:
-            raise(ValueError("You must specify the participant to calculate the bonus."))
+    def bonus(self, participant_uuid=None):
+        if participant_uuid is None:
+            raise(ValueError("You must specify the participant_uuid to calculate the bonus."))
 
         verbose = self.verbose
-        participant_uuid = participant.uniqueid
         key = participant_uuid[0:5]
 
         if verbose:
@@ -181,24 +180,24 @@ class RogersExperiment(Experiment):
             print ">>>>{}    Bonus is {}".format(key, bonus)
         return bonus
 
-    def participant_attention_check(self, participant=None):
+    def participant_attention_check(self, participant_uuid=None):
 
-        key = participant.uniqueid[0:5]
+        key = participant_uuid[0:5]
         verbose = self.verbose
 
         participant_nodes = Node.query.join(Node.network)\
-                                .filter(and_(Node.participant_uuid == participant.uniqueid,
+                                .filter(and_(Node.participant_uuid == participant_uuid,
                                              Network.role == "catch"))\
                                 .all()
         scores = [n.score for n in participant_nodes]
 
         if participant_nodes:
             if verbose:
-                print ">>>>{}     Scoring participant".format(key)
+                print ">>>>{}     Checking performance of participant in catch networks for attention".format(key)
             avg = sum(scores)/float(len(scores))
         else:
             if verbose:
-                print ">>>>{}     Participant has no nodes to score!".format(key)
+                print ">>>>{}     Participant participated in no catch networks, defaulting to passing attention check.".format(key)
             avg = 1.0
 
         is_passing = avg >= self.min_acceptable_performance
