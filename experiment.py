@@ -212,24 +212,22 @@ class RogersExperiment(Experiment):
         participant_uuid = participant.uniqueid
         key = participant_uuid[0:5]
 
-        self.log("{} Checking participant data".format(key))
-
         nodes = Node.query.filter_by(participant_uuid=participant_uuid).all()
 
         if len(nodes) != self.experiment_repeats + self.practice_repeats:
-            self.log("{} Participant has {} nodes - this is not the correct number. Data check failed".format(key))
+            self.log("Participant has {} nodes - this is not the correct number. Data check failed", key)
             return False
 
         nets = [n.network_uuid for n in nodes]
         if len(nets) != len(set(nets)):
-            self.log("{} Participant participated in the same network multiple times. Data check failed".format(key))
+            self.log("Participant participated in the same network multiple times. Data check failed", key)
             return False
 
         if None in [n.fitness for n in nodes]:
-            self.log("{} Some of participants nodes are missing a fitness. Data check failed".format(key))
+            self.log("Some of participants nodes are missing a fitness. Data check failed", key)
             return False
 
-        self.log("{} Data check passed.".format(key))
+        self.log("Data check passed.", key)
         return True
 
 
