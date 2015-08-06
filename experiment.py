@@ -160,6 +160,7 @@ class RogersExperiment(Experiment):
     def bonus(self, participant=None):
         if participant is None:
             raise(ValueError("You must specify the participant to calculate the bonus."))
+        key = participant.uniqueid[0:5]
 
         verbose = self.verbose
         participant_uuid = participant.uniqueid
@@ -173,7 +174,8 @@ class RogersExperiment(Experiment):
                                  Network.role == "experiment"))\
                     .all()
         if len(nodes) == 0:
-            raise(ValueError("Cannot calculate bonus of participant_uuid {} as there are no nodes associated with this uuid".format(participant_uuid)))
+            self.log("Participant has 0 nodes - cannot calculate bonus!", key)
+            return 0
         score = [node.score for node in nodes]
         average = float(sum(score))/float(len(score))
         bonus = max(0, ((average-0.5)*2))*self.bonus_payment
