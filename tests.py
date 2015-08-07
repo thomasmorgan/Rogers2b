@@ -108,7 +108,7 @@ class TestRogers(object):
         return
 
     print("countdown before starting bots...")
-    time.sleep(30)
+    time.sleep(10)
     print("buffer ended, bots started")
 
     # create worker threads
