@@ -32,7 +32,7 @@ class RogersExperiment(Experiment):
         self.network = lambda: DiscreteGenerational(
             generations=3, generation_size=self.generation_size, initial_source=True)
         self.environment_type = RogersEnvironment
-        self.bonus_payment = 0
+        self.bonus_payment = 1.0
         self.initial_recruitment_size = self.generation_size
 
         if not self.networks():
