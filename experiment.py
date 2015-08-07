@@ -72,40 +72,31 @@ class RogersExperiment(Experiment):
         num_agents = network.size(type=Agent)
         current_generation = int((num_agents-1)/float(network.generation_size))
         agent.generation = current_generation
+        self.log("Agent is {}th agent in network, assigned to generation {}".format(num_agents, current_generation), key)
 
-        if self.verbose:
-            print ">>>>{}     Agent is {}th agent in network, assigned to generation {}".format(key, num_agents, current_generation)
-            print ">>>>{}     Adding agent to network.".format(key)
-
+        self.log("Adding agent to network.", key)
         network.add_agent(agent)
-
-        if self.verbose:
-            print ">>>>{}     Agent added to network".format(key)
+        self.log("Agent added to network", key)
 
         environment = network.nodes(type=Environment)[0]
         environment.connect(whom=agent)
-
-        if self.verbose:
-            print ">>>>{}     Agent connected to environment".format(key)
+        self.log("Agent connect to environment", key)
 
         if (num_agents % network.generation_size == 1
                 and current_generation % 10 == 0
                 and current_generation != 0):
-            if self.verbose:
-                print ">>>>{}     Environment stepping".format(key)
+            self.log("Agent is first in generation and generation is a mutliple of 10: environment stepping", key)
             environment.step()
 
         if (current_generation == 0):
-            if self.verbose:
-                print ">>>>{}     Agent in generation 0, so Source transmitting to Agent".format(key)
+            self.log("Agent in generation 0: source transmitting to agent", key)
             network.nodes(type=Source)[0].transmit(to_whom=agent)
 
         agent.receive()
 
         gene = agent.infos(type=LearningGene)[0].contents
         if (gene == "social"):
-            if self.verbose:
-                print ">>>>{}     Agent is a social learner, connecting to social parent".format(key)
+            self.log("Agent is a social learner, connecting to social parent", key)
             prev_agents = RogersAgent.query\
                 .filter(and_(RogersAgent.failed == False,
                              RogersAgent.network_uuid == network.uuid,
@@ -114,11 +105,9 @@ class RogersExperiment(Experiment):
             parent = random.choice(prev_agents)
             parent.connect(direction="to", whom=agent)
             parent.transmit(what=Meme, to_whom=agent)
-            if self.verbose:
-                print ">>>>{}     Parent transmitting meme to Agent".format(key)
+            self.log("Parent transmitting meme to agent", key)
         elif (gene == "asocial"):
-            if self.verbose:
-                print ">>>>{}     Agent is an asocial learner, environment transmitting to Agent".format(key)
+            self.log("Agent is an asocial learner: environment transmitting to Agent")
             environment.transmit(to_whom=agent)
         else:
             raise ValueError("{} has invalid learning gene value of {}".format(agent, gene))
@@ -135,39 +124,34 @@ class RogersExperiment(Experiment):
         info.origin.calculate_fitness()
 
     def recruit(self):
-        print "Running Rogers recruit()"
+        key = "-----"
+        self.log("Running Rogers recruit()", key)
         participants = Participant.query.with_entities(Participant.status).all()
 
         # if all networks are full, close recruitment,
         if not self.networks(full=False):
-            print "All networks are full, closing recruitment."
+            self.log("All networks are full, closing recruitment.", key)
             self.recruiter().close_recruitment()
 
         # if anyone is still working, don't recruit
         elif [p for p in participants if p.status < 100]:
-            print "Networks not full, but people are still participating: not recruiting."
+            self.log("Networks not full, but people are still participating: not recruiting.", key)
             pass
 
         # even if no one else is working, we only need to recruit if the current generation is complete
         elif len([p for p in participants if p.status == 101]) % self.generation_size == 0:
-            print "Networks not full, no-one currently participating and at end of generation: recruiting another generation."
+            self.log("Networks not full, no-one currently participating and at end of generation: recruiting another generation.", key)
             self.recruiter().recruit_participants(n=self.generation_size)
         # otherwise do nothing
         else:
-            print "Networks not full, no-one current participating, but generation not full: not recruiting."
+            self.log("Networks not full, no-one current participating, but generation not full: not recruiting.", key)
             pass
 
     def bonus(self, participant=None):
         if participant is None:
             raise(ValueError("You must specify the participant to calculate the bonus."))
-        key = participant.uniqueid[0:5]
-
-        verbose = self.verbose
         participant_uuid = participant.uniqueid
         key = participant_uuid[0:5]
-
-        if verbose:
-            print ">>>>{}     Scoring nodes".format(key)
 
         nodes = Node.query.join(Node.network)\
                     .filter(and_(Node.participant_uuid == participant_uuid,
@@ -176,17 +160,16 @@ class RogersExperiment(Experiment):
         if len(nodes) == 0:
             self.log("Participant has 0 nodes - cannot calculate bonus!", key)
             return 0
+        self.log("calculating bonus...", key)
         score = [node.score for node in nodes]
         average = float(sum(score))/float(len(score))
         bonus = max(0, ((average-0.5)*2))*self.bonus_payment
-        if verbose:
-            print ">>>>{}    Bonus is {}".format(key, bonus)
+        self.log("bonus calculated, returning {}".format(bonus), key)
         return bonus
 
     def participant_attention_check(self, participant=None):
 
         key = participant.uniqueid[0:5]
-        verbose = self.verbose
 
         participant_nodes = Node.query.join(Node.network)\
                                 .filter(and_(Node.participant_uuid == participant.uniqueid,
@@ -195,15 +178,14 @@ class RogersExperiment(Experiment):
         scores = [n.score for n in participant_nodes]
 
         if participant_nodes:
-            if verbose:
-                print ">>>>{}     Scoring participant".format(key)
+            self.log("Scoring participant nodes from catch networks", key)
             avg = sum(scores)/float(len(scores))
         else:
-            if verbose:
-                print ">>>>{}     Participant has no nodes to score!".format(key)
-            avg = 1.0
+            self.log("Participant has no nodes from catch networks, passing by default")
+            return True
 
         is_passing = avg >= self.min_acceptable_performance
+        self.log("Min performance is {}. Participant has performance of {}. Returning {}".format(self.min_acceptable_performance, avg, is_passing), key)
         return is_passing
 
     def check_participant_data(self, participant=None):
