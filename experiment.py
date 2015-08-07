@@ -163,7 +163,7 @@ class RogersExperiment(Experiment):
         self.log("calculating bonus...", key)
         score = [node.score for node in nodes]
         average = float(sum(score))/float(len(score))
-        bonus = max(0, ((average-0.5)*2))*self.bonus_payment
+        bonus = round(max(0.0, ((average-0.5)*2))*self.bonus_payment, 2)
         self.log("bonus calculated, returning {}".format(bonus), key)
         return bonus
 
