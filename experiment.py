@@ -107,7 +107,7 @@ class RogersExperiment(Experiment):
             parent.transmit(what=Meme, to_whom=agent)
             self.log("Parent transmitting meme to agent", key)
         elif (gene == "asocial"):
-            self.log("Agent is an asocial learner: environment transmitting to Agent")
+            self.log("Agent is an asocial learner: environment transmitting to Agent", key)
             environment.transmit(to_whom=agent)
         else:
             raise ValueError("{} has invalid learning gene value of {}".format(agent, gene))
@@ -181,7 +181,7 @@ class RogersExperiment(Experiment):
             self.log("Scoring participant nodes from catch networks", key)
             avg = sum(scores)/float(len(scores))
         else:
-            self.log("Participant has no nodes from catch networks, passing by default")
+            self.log("Participant has no nodes from catch networks, passing by default", key)
             return True
 
         is_passing = avg >= self.min_acceptable_performance
