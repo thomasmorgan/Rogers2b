@@ -199,7 +199,7 @@ class RogersExperiment(Experiment):
         nodes = Node.query.filter_by(participant_uuid=participant_uuid).all()
 
         if len(nodes) != self.experiment_repeats + self.practice_repeats:
-            self.log("Participant has {} nodes - this is not the correct number. Data check failed", key)
+            self.log("Participant has {} nodes - this is not the correct number. Data check failed".format(len(nodes)), key)
             return False
 
         nets = [n.network_uuid for n in nodes]
