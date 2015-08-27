@@ -126,7 +126,7 @@ class RogersExperiment(Experiment):
         current_generation = int((num_finished_participants-1)/float(self.generation_size))
 
         if num_finished_participants % self.generation_size == 0:
-            if current_generation % 10 == 0:
+            if (current_generation + 1) % 10 == 0:
                 self.log("Participant was final particpant in generation {}: environment stepping".format(current_generation), key)
                 environments = Environment.query.all()
                 for e in environments:
