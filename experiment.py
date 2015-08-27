@@ -125,13 +125,16 @@ class RogersExperiment(Experiment):
         num_finished_participants = len(finished_participants)
         current_generation = int((num_finished_participants-1)/float(self.generation_size))
 
-        if (num_finished_participants % self.generation_size == 0
-                and current_generation % 10 == 0
-                and current_generation != 0):
-            self.log("Participant was final particpant in generation {}: environment stepping".format(current_generation), key)
-            environments = Environment.query.all()
-            for e in environments:
-                e.step()
+        if num_finished_participants % self.generation_size == 0:
+            if current_generation % 10 == 0:
+                self.log("Participant was final particpant in generation {}: environment stepping".format(current_generation), key)
+                environments = Environment.query.all()
+                for e in environments:
+                    e.step()
+            else:
+                self.log("Participant was final participant in generation {}: not stepping".format(current_generation), key)
+        else:
+            self.log("Participant was not final in generation {}: not stepping".format(current_generation), key)
 
     def recruit(self):
         key = "-----"
