@@ -82,12 +82,6 @@ class RogersExperiment(Experiment):
         environment.connect(whom=agent)
         self.log("Agent connect to environment", key)
 
-        if (num_agents % network.generation_size == 1
-                and current_generation % 10 == 0
-                and current_generation != 0):
-            self.log("Agent is first in generation and generation is a mutliple of 10: environment stepping", key)
-            environment.step()
-
         if (current_generation == 0):
             self.log("Agent in generation 0: source transmitting to agent", key)
             network.nodes(type=Source)[0].transmit(to_whom=agent)
@@ -122,6 +116,22 @@ class RogersExperiment(Experiment):
 
     def information_creation_trigger(self, info):
         info.origin.calculate_fitness()
+
+    def participant_submission_success_trigger(self, participant=None):
+
+        key = participant.uuid[0:5]
+
+        finished_participants = Participant.query.filter_by(status=101).all()
+        num_finished_participants = len(finished_participants)
+        current_generation = int((num_finished_participants-1)/float(self.generation_size))
+
+        if (num_finished_participants % self.generation_size == 0
+                and current_generation % 10 == 0
+                and current_generation != 0):
+            self.log("Participant was final particpant in generation {}: environment stepping".format(current_generation), key)
+            environments = Environment.query.all()
+            for e in environments:
+                e.step()
 
     def recruit(self):
         key = "-----"
