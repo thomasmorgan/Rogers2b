@@ -119,7 +119,7 @@ class RogersExperiment(Experiment):
 
     def participant_submission_success_trigger(self, participant=None):
 
-        key = participant.uuid[0:5]
+        key = participant.uniqueid[0:5]
 
         finished_participants = Participant.query.filter_by(status=101).all()
         num_finished_participants = len(finished_participants)
