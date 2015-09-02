@@ -224,6 +224,10 @@ class RogersExperiment(Experiment):
             self.log("Some of participants nodes are missing a fitness. Data check failed", key)
             return False
 
+        if None in [n.score for n in nodes]:
+            self.log("Some of participants nodes are missing a score. Data check failed", key)
+            return False
+
         self.log("Data check passed.", key)
         return True
 
