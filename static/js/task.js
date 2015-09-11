@@ -152,9 +152,9 @@ var StroopExperiment = function() {
 
                     meme = resp.contents;
 
-                    if (meme == "0") {
+                    if (meme == "blue") {
                         $("#stimulus").attr("src", "/static/images/blue_social.jpg");
-                    } else if (meme == "1") {
+                    } else if (meme == "yellow") {
                         $("#stimulus").attr("src", "/static/images/yellow_social.jpg");
                     }
                     $("#stimulus").show();
@@ -274,7 +274,7 @@ var StroopExperiment = function() {
                 method: 'post',
                 data: {
                     origin_uuid: agent_uuid,
-                    contents: "1",
+                    contents: "blue",
                     info_type: "meme"
                 },
                 success: function (resp) {
@@ -299,7 +299,7 @@ var StroopExperiment = function() {
                 method: 'post',
                 data: {
                     origin_uuid: agent_uuid,
-                    contents: "0",
+                    contents: "yellow",
                     info_type: "meme"
                 },
                 success: function (resp) {
