@@ -307,12 +307,12 @@ class RogersAgent(Agent):
                             "but they already have a fitness")
         infos = self.infos()
 
-        meme = float([i for i in infos if isinstance(i, Meme)][0].contents)
+        said_blue = ([i for i in infos if isinstance(i, Meme)][0].contents == "blue")
         proportion = float(max(State.query.filter_by(network_uuid=self.network_uuid).all(), key=attrgetter('creation_time')).contents)
         self.proportion = proportion
-        state = round(proportion)
+        is_blue = proportion > 0.5
 
-        if meme == state:
+        if said_blue is is_blue:
             self.score = 1
         else:
             self.score = 0
