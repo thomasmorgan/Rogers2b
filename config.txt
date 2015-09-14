@@ -1,6 +1,7 @@
 [Experiment Configuration]
 wallace_version = 0.1
 mode = sandbox
+auto_recruit = true
 
 [HIT Configuration]
 title = Judge the dots
@@ -32,10 +33,10 @@ loglevel = 0
 debug = true
 login_username = examplename
 login_pw = examplepassword
-threads = 1
+threads = auto
 notification_url = None
 dyno_type = standard-2x
-num_dynos = 40
+num_dynos = 1
 
 [Task Parameters]
 experiment_code_version = 1.0
