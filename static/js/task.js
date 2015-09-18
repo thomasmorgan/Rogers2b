@@ -63,12 +63,16 @@ var StroopExperiment = function() {
             type: 'json',
             success: function (resp) {
                 agent_uuid = resp.agents.uuid;
-                setTimeout(function () {
-                    getAllInformation(agent_uuid);
-                }, 500);
+                getAllInformation(agent_uuid);
             },
             error: function (err) {
-                currentview = new Questionnaire();
+                console.log(err);
+                err_response = JSON.parse(err.response);
+                if (err_response.hasOwnProperty('html')) {
+                    $('body').html(err_response.html);
+                } else {
+                    currentview = new Questionnaire();
+                }
             }
         });
     };
@@ -87,6 +91,8 @@ var StroopExperiment = function() {
             },
             error: function (err) {
                 console.log(err);
+                err_response = JSON.parse(err.response);
+                $('body').html(err_response.html);
             }
         });
     };
@@ -103,6 +109,8 @@ var StroopExperiment = function() {
             },
             error: function (err) {
                 console.log(err);
+                err_response = JSON.parse(err.response);
+                $('body').html(err_response.html);
             }
         });
     };
@@ -169,6 +177,8 @@ var StroopExperiment = function() {
             },
             error: function (err) {
                 console.log(err);
+                err_response = JSON.parse(err.response);
+                $('body').html(err_response.html);
             }
         });
     };
