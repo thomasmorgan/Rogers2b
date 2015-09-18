@@ -77,14 +77,14 @@ class TestRogers(object):
                 agent = requests.post(url + '/agents', data=args, headers=headers)
                 working = agent.status_code == 200
                 if working is True:
-                    agent_uuid = agent.json()['agents']['uuid']
-                    args = {'origin_uuid': agent_uuid}
+                    agent_id = agent.json()['agents']['id']
+                    args = {'origin_id': agent_id}
                     information = requests.get(url + '/information', params=args, headers=headers)
-                    args = {'destination_uuid': agent_uuid}
+                    args = {'destination_id': agent_id}
                     transmission = requests.get(url + '/transmissions', params=args, headers=headers)
-                    information2 = requests.get(url + '/information/' + str(transmission.json()['transmissions'][0]['info_uuid']), params=args, headers=headers)
+                    information2 = requests.get(url + '/information/' + str(transmission.json()['transmissions'][0]['info_id']), params=args, headers=headers)
                     time.sleep(1)
-                    args = {'origin_uuid': agent_uuid, 'contents': '0', 'info_type': 'meme'}
+                    args = {'origin_id': agent_id, 'contents': '0', 'info_type': 'meme'}
                     information3 = requests.post(url + '/information', data=args, headers=headers)
             except:
                 print("critical error for bot {}".format(i))
@@ -148,7 +148,7 @@ class TestRogers(object):
     #     exp = RogersExperiment(self.db)
     #     exp_setup_stop2 = timenow()
 
-    #     p_uuids = []
+    #     p_ids = []
     #     p_times = []
     #     dum = timenow()
     #     assign_time = dum - dum
@@ -173,13 +173,13 @@ class TestRogers(object):
     #                 end="\r")
     #         sys.stdout.flush()
 
-    #         p_uuid = str(random.random())
-    #         p_uuids.append(p_uuid)
+    #         p_id = str(random.random())
+    #         p_ids.append(p_id)
     #         p_start_time = timenow()
 
     #         while True:
     #             assign_start_time = timenow()
-    #             agent = exp.assign_agent_to_participant(participant_uuid=p_uuid)
+    #             agent = exp.assign_agent_to_participant(participant_id=p_id)
     #             assign_stop_time = timenow()
     #             assign_time += (assign_stop_time - assign_start_time)
     #             if agent is None:
@@ -197,11 +197,11 @@ class TestRogers(object):
     #                         exp.information_creation_trigger(Meme(origin=agent, contents=1-round(current_state)))
     #                 process_stop_time = timenow()
     #                 process_time += (process_stop_time - process_start_time)
-    #         bonus = exp.bonus(participant_uuid=p_uuid)
+    #         bonus = exp.bonus(participant_id=p_id)
     #         assert bonus >= 0.0
     #         assert bonus <= exp.bonus_payment
 
-    #         exp.participant_attention_check(participant_uuid=p_uuid)
+    #         exp.participant_attention_check(participant_id=p_id)
     #         p_stop_time = timenow()
     #         p_times.append(p_stop_time - p_start_time)
 
@@ -287,14 +287,14 @@ class TestRogers(object):
 
     #         for agent in agents:
     #             if agent.generation == 0:
-    #                 assert len(models.Vector.query.filter_by(origin_uuid=source.uuid, destination_uuid=agent.uuid).all()) == 1
+    #                 assert len(models.Vector.query.filter_by(origin_id=source.id, destination_id=agent.id).all()) == 1
     #             else:
-    #                 assert len(models.Vector.query.filter_by(origin_uuid=source.uuid, destination_uuid=agent.uuid).all()) == 0
+    #                 assert len(models.Vector.query.filter_by(origin_id=source.id, destination_id=agent.id).all()) == 0
 
     #         for agent in agents:
-    #             assert len([v for v in vectors if v.origin_uuid == environment.uuid and v.destination_uuid == agent.uuid]) == 1
+    #             assert len([v for v in vectors if v.origin_id == environment.id and v.destination_id == agent.id]) == 1
 
-    #         for v in [v for v in vectors if v.origin_uuid == source.uuid]:
+    #         for v in [v for v in vectors if v.origin_id == source.id]:
     #             assert isinstance(v.destination, RogersAgentFounder)
 
     #     print("Testing vectors...                   done!")
@@ -316,10 +316,10 @@ class TestRogers(object):
     #         infos = network.infos()
 
     #         for agent in agents:
-    #             assert len([i for i in infos if i.origin_uuid == agent.uuid]) == 2
-    #             assert len([i for i in infos if i.origin_uuid == agent.uuid and isinstance(i, Gene)]) == 1
-    #             assert len([i for i in infos if i.origin_uuid == agent.uuid and isinstance(i, LearningGene)]) == 1
-    #             assert len([i for i in infos if i.origin_uuid == agent.uuid and isinstance(i, Meme)]) == 1
+    #             assert len([i for i in infos if i.origin_id == agent.id]) == 2
+    #             assert len([i for i in infos if i.origin_id == agent.id and isinstance(i, Gene)]) == 1
+    #             assert len([i for i in infos if i.origin_id == agent.id and isinstance(i, LearningGene)]) == 1
+    #             assert len([i for i in infos if i.origin_id == agent.id and isinstance(i, Meme)]) == 1
 
     #     print("Testing infos...                     done!")
     #     sys.stdout.flush()
@@ -341,13 +341,13 @@ class TestRogers(object):
     #         transmissions = network.transmissions()
 
     #         for agent in agents:
-    #             in_ts = [t for t in transmissions if t.destination_uuid == agent.uuid]
+    #             in_ts = [t for t in transmissions if t.destination_id == agent.id]
     #             types = [type(t.info) for t in in_ts]
 
     #             assert len(in_ts) == 2
-    #             assert len([t for t in transmissions if t.destination_uuid == agent.uuid and t.status == "pending"]) == 0
+    #             assert len([t for t in transmissions if t.destination_id == agent.id and t.status == "pending"]) == 0
 
-    #             lg = [i for i in infos if i.origin_uuid == agent.uuid and isinstance(i, LearningGene)]
+    #             lg = [i for i in infos if i.origin_id == agent.id and isinstance(i, LearningGene)]
     #             assert len(lg) == 1
     #             lg = lg[0]
 
@@ -369,7 +369,7 @@ class TestRogers(object):
     #     print("Testing fitness...", end="\r")
     #     sys.stdout.flush()
 
-    #     p0_nodes = models.Node.query.filter_by(participant_uuid=p_uuids[0]).all()
+    #     p0_nodes = models.Node.query.filter_by(participant_id=p_ids[0]).all()
 
     #     assert len(p0_nodes) == len(exp.networks())
 
@@ -400,7 +400,7 @@ class TestRogers(object):
     #     print("Testing bonus payments...", end="\r")
     #     sys.stdout.flush()
 
-    #     assert exp.bonus(participant_uuid=p_uuids[0]) == exp.bonus_payment
+    #     assert exp.bonus(participant_id=p_ids[0]) == exp.bonus_payment
 
     #     print("Testing bonus payments...            done!")
     #     sys.stdout.flush()

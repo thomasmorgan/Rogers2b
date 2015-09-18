@@ -66,7 +66,7 @@ class RogersExperiment(Experiment):
 
     def create_agent_trigger(self, agent, network):
 
-        participant = Participant.query.filter_by(uniqueid=agent.participant_uuid).one()
+        participant = Participant.query.filter_by(uniqueid=agent.participant_id).one()
         key = participant.uniqueid[0:5]
 
         num_agents = network.size(type=Agent)
@@ -93,7 +93,7 @@ class RogersExperiment(Experiment):
             self.log("Agent is a social learner, connecting to social parent", key)
             prev_agents = RogersAgent.query\
                 .filter(and_(RogersAgent.failed == False,
-                             RogersAgent.network_uuid == network.uuid,
+                             RogersAgent.network_id == network.id,
                              RogersAgent.generation == current_generation-1))\
                 .all()
             parent = random.choice(prev_agents)
@@ -163,11 +163,11 @@ class RogersExperiment(Experiment):
     def bonus(self, participant=None):
         if participant is None:
             raise(ValueError("You must specify the participant to calculate the bonus."))
-        participant_uuid = participant.uniqueid
-        key = participant_uuid[0:5]
+        participant_id = participant.uniqueid
+        key = participant_id[0:5]
 
         nodes = Node.query.join(Node.network)\
-                    .filter(and_(Node.participant_uuid == participant_uuid,
+                    .filter(and_(Node.participant_id == participant_id,
                                  Network.role == "experiment"))\
                     .all()
         if len(nodes) == 0:
@@ -185,7 +185,7 @@ class RogersExperiment(Experiment):
         key = participant.uniqueid[0:5]
 
         participant_nodes = Node.query.join(Node.network)\
-                                .filter(and_(Node.participant_uuid == participant.uniqueid,
+                                .filter(and_(Node.participant_id == participant.uniqueid,
                                              Network.role == "catch"))\
                                 .all()
         scores = [n.score for n in participant_nodes]
@@ -206,16 +206,16 @@ class RogersExperiment(Experiment):
         if participant is None:
             raise ValueError("check_participant_data must be passed a participant, not None")
 
-        participant_uuid = participant.uniqueid
-        key = participant_uuid[0:5]
+        participant_id = participant.uniqueid
+        key = participant_id[0:5]
 
-        nodes = Node.query.filter_by(participant_uuid=participant_uuid).all()
+        nodes = Node.query.filter_by(participant_id=participant_id).all()
 
         if len(nodes) != self.experiment_repeats + self.practice_repeats:
             self.log("Participant has {} nodes - this is not the correct number. Data check failed".format(len(nodes)), key)
             return False
 
-        nets = [n.network_uuid for n in nodes]
+        nets = [n.network_id for n in nodes]
         if len(nets) != len(set(nets)):
             self.log("Participant participated in the same network multiple times. Data check failed", key)
             return False
@@ -303,12 +303,12 @@ class RogersAgent(Agent):
         from operator import attrgetter
 
         if self.fitness is not None:
-            raise Exception("You are calculating the fitness of agent {}, ".format(self.uuid) +
+            raise Exception("You are calculating the fitness of agent {}, ".format(self.id) +
                             "but they already have a fitness")
         infos = self.infos()
 
         said_blue = ([i for i in infos if isinstance(i, Meme)][0].contents == "blue")
-        proportion = float(max(State.query.filter_by(network_uuid=self.network_uuid).all(), key=attrgetter('creation_time')).contents)
+        proportion = float(max(State.query.filter_by(network_id=self.network_id).all(), key=attrgetter('creation_time')).contents)
         self.proportion = proportion
         is_blue = proportion > 0.5
 
