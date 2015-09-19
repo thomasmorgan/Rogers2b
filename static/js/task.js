@@ -62,8 +62,8 @@ var StroopExperiment = function() {
             data: { unique_id: uniqueId },
             type: 'json',
             success: function (resp) {
-                agent_uuid = resp.agents.uuid;
-                getAllInformation(agent_uuid);
+                agent_id = resp.agents.id;
+                getAllInformation(agent_id);
             },
             error: function (err) {
                 console.log(err);
@@ -78,16 +78,16 @@ var StroopExperiment = function() {
     };
 
     // Get all the infos
-    getAllInformation = function(agent_uuid) {
+    getAllInformation = function(agent_id) {
         reqwest({
             url: "/information",
             method: 'get',
-            data: { origin_uuid: agent_uuid },
+            data: { origin_id: agent_id },
             type: 'json',
             success: function (resp) {
                 learning_strategy = resp.information[0].contents;
                 console.log(learning_strategy);
-                getPendingTransmissions(agent_uuid);
+                getPendingTransmissions(agent_id);
             },
             error: function (err) {
                 console.log(err);
@@ -97,15 +97,15 @@ var StroopExperiment = function() {
         });
     };
 
-    getPendingTransmissions = function(destination_uuid) {
+    getPendingTransmissions = function(destination_id) {
         reqwest({
-            url: "/transmissions?destination_uuid=" + destination_uuid,
+            url: "/transmissions?destination_id=" + destination_id,
             method: 'get',
             type: 'json',
             success: function (resp) {
                 console.log(resp);
-                info_uuid = resp.transmissions[0].info_uuid;
-                info = getInfo(info_uuid);
+                info_id = resp.transmissions[0].info_id;
+                info = getInfo(info_id);
             },
             error: function (err) {
                 console.log(err);
@@ -115,9 +115,9 @@ var StroopExperiment = function() {
         });
     };
 
-    getInfo = function(uuid) {
+    getInfo = function(id) {
         reqwest({
-            url: "/information/" + uuid,
+            url: "/information/" + id,
             method: 'get',
             type: 'json',
             success: function (resp) {
@@ -283,7 +283,7 @@ var StroopExperiment = function() {
                 url: "/information",
                 method: 'post',
                 data: {
-                    origin_uuid: agent_uuid,
+                    origin_id: agent_id,
                     contents: "blue",
                     info_type: "meme"
                 },
@@ -308,7 +308,7 @@ var StroopExperiment = function() {
                 url: "/information",
                 method: 'post',
                 data: {
-                    origin_uuid: agent_uuid,
+                    origin_id: agent_id,
                     contents: "yellow",
                     info_type: "meme"
                 },
