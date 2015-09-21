@@ -154,7 +154,7 @@ class RogersExperiment(Experiment):
         # even if no one else is working, we only need to recruit if the current generation is complete
         elif len([p for p in participants if p.status == 101]) % self.generation_size == 0:
             self.log("Networks not full, no-one currently participating and at end of generation: recruiting another generation.", key)
-            # self.recruiter().recruit_participants(n=self.generation_size)
+            self.recruiter().recruit_participants(n=self.generation_size)
         # otherwise do nothing
         else:
             self.log("Networks not full, no-one current participating, but generation not full: not recruiting.", key)
