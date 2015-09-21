@@ -104,7 +104,6 @@ var StroopExperiment = function() {
             type: 'json',
             success: function (resp) {
                 learning_strategy = resp.information[0].contents;
-                console.log(learning_strategy);
                 getPendingTransmissions(agent_id);
             },
             error: function (err) {
