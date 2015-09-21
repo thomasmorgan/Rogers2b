@@ -17,7 +17,8 @@ var pages = [
     "instructions/instruct-2.html",
     "instructions/instruct-ready.html",
     "stage.html",
-    "postquestionnaire.html"
+    "postquestionnaire.html",
+    "tampering.html"
 ];
 
 psiTurk.preloadPages(pages);
@@ -49,6 +50,20 @@ var StroopExperiment = function() {
     trial = 0;
     lock = true;
 
+    // Kick people out if they change their workerId.
+    function ensureSameWorker() {
+        workerId = amplify.store("wallace_worker_id")
+        workerIdNew = getParameterByName('workerId')
+
+        if (typeof workerId === 'undefined') {
+            amplify.store("wallace_worker_id", workerIdNew)
+        } else {
+            if ((workerIdNew != workerId) && (workerIdNew.substring(0,5) != "debug")) {
+                currentview = psiTurk.showPage('tampering.html');
+            }
+        }
+    }
+
     // Load the stage.html snippet into the body of the page
     psiTurk.showPage('stage.html');
     $("#response-form").hide();
@@ -56,6 +71,9 @@ var StroopExperiment = function() {
 
     // Create the agent.
     createAgent = function() {
+
+        ensureSameWorker();
+
         reqwest({
             url: "/agents",
             method: 'post',
