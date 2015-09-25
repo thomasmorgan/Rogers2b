@@ -4,20 +4,21 @@ from wallace.experiments import Experiment
 from wallace.information import Gene, Meme, State
 from wallace.nodes import Source, Agent, Environment
 from wallace.networks import DiscreteGenerational
-from wallace.models import Node, Network
+from wallace.models import Node, Network, Info, Transmission
 from wallace import transformations
 from psiturk.models import Participant
 from sqlalchemy import Integer, Float
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql.expression import cast
 from sqlalchemy import and_
+from json import dumps
 import random
 
 
-class RogersExperiment(Experiment):
+class RogersExperiment2a(Experiment):
 
     def __init__(self, session):
-        super(RogersExperiment, self).__init__(session)
+        super(RogersExperiment2a, self).__init__(session)
 
         self.task = "Rogers network game"
         self.verbose = True
@@ -26,6 +27,7 @@ class RogersExperiment(Experiment):
         self.catch_repeats = 12  # a subset of experiment repeats
         self.practice_difficulty = 0.80
         self.difficulties = [0.525, 0.5625, 0.65]*self.experiment_repeats
+        self.social_source_kinds = ["single_agent", "single_generation", "triple_generation"]*(self.experiment_repeats + self.practice_repeats)
         self.catch_difficulty = 0.80
         self.min_acceptable_performance = 10/float(12)
         self.generation_size = 40
@@ -40,7 +42,7 @@ class RogersExperiment(Experiment):
         self.save()
 
     def setup(self):
-        super(RogersExperiment, self).setup()
+        super(RogersExperiment2a, self).setup()
 
         for net in random.sample(self.networks(role="experiment"), self.catch_repeats):
             net.role = "catch"
@@ -48,6 +50,8 @@ class RogersExperiment(Experiment):
         for net in self.networks():
             source = RogersSource(network=net)
             source.create_information()
+            social_source = RogersSocialSource(network=net)
+            social_source.kind = self.social_source_kinds[self.networks().index(net)]
             if net.role == "practice":
                 RogersEnvironment(proportion=self.practice_difficulty, network=net)
             if net.role == "catch":
@@ -59,7 +63,7 @@ class RogersExperiment(Experiment):
     def agent(self, network=None):
         if network.role == "practice" or network.role == "catch":
             return RogersAgentFounder
-        elif network.size(type=Agent) < network.generation_size:
+        elif network.size(type=Agent) < 3*network.generation_size:
             return RogersAgentFounder
         else:
             return RogersAgent
@@ -84,22 +88,19 @@ class RogersExperiment(Experiment):
 
         if (current_generation == 0):
             self.log("Agent in generation 0: source transmitting to agent", key)
-            network.nodes(type=Source)[0].transmit(to_whom=agent)
+            network.nodes(type=RogersSource)[0].transmit(to_whom=agent)
 
         agent.receive()
 
         gene = agent.infos(type=LearningGene)[0].contents
         if (gene == "social"):
-            self.log("Agent is a social learner, connecting to social parent", key)
-            prev_agents = RogersAgent.query\
-                .filter(and_(RogersAgent.failed == False,
-                             RogersAgent.network_id == network.id,
-                             RogersAgent.generation == current_generation-1))\
-                .all()
-            parent = random.choice(prev_agents)
-            parent.connect(direction="to", whom=agent)
-            parent.transmit(what=Meme, to_whom=agent)
-            self.log("Parent transmitting meme to agent", key)
+            self.log("Agent is a social learner, connecting to social source", key)
+            social_source = network.nodes(type=RogersSocialSource)[0]
+            social_source.connect(direction="to", whom=agent)
+            self.log("Social source generating meme", key)
+            meme = social_source._what(agent=agent)
+            self.log("social source transmitting to agent", key)
+            social_source.transmit(what=meme, to_whom=agent)
         elif (gene == "asocial"):
             self.log("Agent is an asocial learner: environment transmitting to Agent", key)
             environment.transmit(to_whom=agent)
@@ -115,6 +116,10 @@ class RogersExperiment(Experiment):
             t.destination.update([t.info])
 
     def information_creation_trigger(self, info):
+        ts = Transmission.query.filter_by(destination_id=info.origin_id, status="received").with_entities(Transmission.info_id).all()
+        infos = Info.query.filter(Info.id.in_([t.info_id for t in ts])).all()
+        stimulus = [i for i in infos if type(i) in [State, Meme]][0]
+        transformations.Response(info_in=stimulus, info_out=info)
         info.origin.calculate_fitness()
 
     def participant_submission_success_trigger(self, participant=None):
@@ -126,13 +131,19 @@ class RogersExperiment(Experiment):
         current_generation = int((num_finished_participants-1)/float(self.generation_size))
 
         if num_finished_participants % self.generation_size == 0:
-            if (current_generation + 1) % 10 == 0:
-                self.log("Participant was final particpant in generation {}: environment stepping".format(current_generation), key)
-                environments = Environment.query.all()
-                for e in environments:
-                    e.step()
-            else:
-                self.log("Participant was final participant in generation {}: not stepping".format(current_generation), key)
+            remainder = (current_generation+1) % 10
+            if remainder == 0:
+                remainder = 10
+            networks = [remainder]
+            temp = remainder+10
+            while temp < 125:
+                networks.append(temp)
+                temp = temp+10
+
+            self.log("Participant was final particpant in generation {}: environments {} stepping".format(current_generation, networks), key)
+            environments = Environment.query.filter(Environment.id.in_(networks)).all()
+            for e in environments:
+                e.step()
         else:
             self.log("Participant was not final in generation {}: not stepping".format(current_generation), key)
 
@@ -256,6 +267,93 @@ class RogersSource(Source):
 
     def _what(self):
         return self.infos(type=LearningGene)[0]
+
+
+class RogersSocialSource(Source):
+    """ A source that sends social information """
+
+    __mapper_args__ = {"polymorphic_identity": "rogers_social_source"}
+
+    @hybrid_property
+    def kind(self):
+        return self.property1
+
+    @kind.setter
+    def kind(self, kind):
+        self.property1 = kind
+
+    @kind.expression
+    def kind(self):
+        return self.property1
+
+    def _what(self, agent=None):
+        if agent is None:
+            raise ValueError("Rogers Social source _what must be sent a node")
+        elif not isinstance(agent, Agent):
+            raise ValueError("Rogers social source _what must be sent a node")
+
+        if self.kind == "single_agent":
+            parent = random.choice(RogersAgent.query.filter_by(generation=(agent.generation-1), failed=False, network_id=agent.network_id).with_entities(RogersAgent.id).all())
+            parents_meme = Meme.query.filter_by(origin_id=parent.id).all()[0]
+            new_meme = Meme(origin=self, contents=parents_meme.contents)
+            transformations.Replication(info_in=parents_meme, info_out=new_meme)
+        elif self.kind == "single_generation":
+            generation = RogersAgent.query.filter_by(generation=(agent.generation-1), failed=False, network_id=agent.network_id).with_entities(RogersAgent.id).all()
+            ids = [n.id for n in generation]
+            memes = Meme.query.filter(Meme.origin_id.in_(ids)).all()
+            n_blue = 0
+            n_yellow = 0
+            for m in memes:
+                if m.contents == "blue":
+                    n_blue += 1
+                elif m.contents == "yellow":
+                    n_yellow += 1
+                else:
+                    raise ValueError("Meme cannot have contents other than yellow or blue, but contents is {}".format(m.contents))
+            summary = {"blue": n_blue, "yellow": n_yellow}
+            new_meme = Meme(origin=self, contents=dumps(summary))
+        elif self.kind == "triple_generation":
+            generation1 = RogersAgent.query.filter_by(generation=(agent.generation-1), failed=False, network_id=agent.network_id).with_entities(RogersAgent.id).all()
+            generation2 = RogersAgent.query.filter_by(generation=(agent.generation-2), failed=False, network_id=agent.network_id).with_entities(RogersAgent.id).all()
+            generation3 = RogersAgent.query.filter_by(generation=(agent.generation-3), failed=False, network_id=agent.network_id).with_entities(RogersAgent.id).all()
+            ids1 = [n.id for n in generation1]
+            ids2 = [n.id for n in generation2]
+            ids3 = [n.id for n in generation3]
+            memes1 = Meme.query.filter(Meme.origin_id.in_(ids1)).all()
+            memes2 = Meme.query.filter(Meme.origin_id.in_(ids2)).all()
+            memes3 = Meme.query.filter(Meme.origin_id.in_(ids3)).all()
+            n_blue1 = 0
+            n_yellow1 = 0
+            n_blue2 = 0
+            n_yellow2 = 0
+            n_blue3 = 0
+            n_yellow3 = 0
+            for m in memes1:
+                if m.contents == "blue":
+                    n_blue1 += 1
+                elif m.contents == "yellow":
+                    n_yellow1 += 1
+                else:
+                    raise ValueError("Meme cannot have contents other than yellow or blue, but contents is {}".format(m.contents))
+            for m in memes2:
+                if m.contents == "blue":
+                    n_blue2 += 1
+                elif m.contents == "yellow":
+                    n_yellow2 += 1
+                else:
+                    raise ValueError("Meme cannot have contents other than yellow or blue, but contents is {}".format(m.contents))
+            for m in memes3:
+                if m.contents == "blue":
+                    n_blue3 += 1
+                elif m.contents == "yellow":
+                    n_yellow3 += 1
+                else:
+                    raise ValueError("Meme cannot have contents other than yellow or blue, but contents is {}".format(m.contents))
+            summary = {"blue1": n_blue1, "yellow1": n_yellow1, "blue2": n_blue2, "yellow2": n_yellow2, "blue3": n_blue3, "yellow3": n_yellow3}
+            new_meme = Meme(origin=self, contents=dumps(summary))
+        else:
+            raise ValueError("Rogers social source cannot be {}".format(self.kind))
+        return new_meme
 
 
 class RogersAgent(Agent):
