@@ -8,6 +8,13 @@ body {
     font-size: 13pt;
 }
 
+.test-text-box {
+  border: 1px solid #ccc;
+  border-radius:2px;
+  vertical-align: middle;
+  resize: none;
+}
+
 #stimulus {
   padding-top: 15px;
 }

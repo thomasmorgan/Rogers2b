@@ -26,7 +26,7 @@ class RogersExperiment2a(Experiment):
         self.practice_repeats = 5
         self.catch_repeats = 12  # a subset of experiment repeats
         self.practice_difficulty = 0.80
-        self.difficulties = [0.525, 0.5625, 0.65]*self.experiment_repeats
+        self.difficulties = [0.65]*self.experiment_repeats
         self.social_source_kinds = ["single_agent", "single_generation", "triple_generation"]*(self.experiment_repeats + self.practice_repeats)
         self.catch_difficulty = 0.80
         self.min_acceptable_performance = 10/float(12)
@@ -36,6 +36,7 @@ class RogersExperiment2a(Experiment):
         self.environment_type = RogersEnvironment
         self.bonus_payment = 1.0
         self.initial_recruitment_size = self.generation_size
+        self.trusted_strings.extend(["LearningGene"])
 
         if not self.networks():
             self.setup()
@@ -68,59 +69,55 @@ class RogersExperiment2a(Experiment):
         else:
             return RogersAgent
 
-    def create_agent_trigger(self, agent, network):
+    def add_node_to_network(self, participant_id, node, network):
 
-        participant = Participant.query.filter_by(uniqueid=agent.participant_id).one()
-        key = participant.uniqueid[0:5]
+        key = participant_id[0:5]
 
         num_agents = network.size(type=Agent)
         current_generation = int((num_agents-1)/float(network.generation_size))
-        agent.generation = current_generation
+        node.generation = current_generation
         self.log("Agent is {}th agent in network, assigned to generation {}".format(num_agents, current_generation), key)
 
         self.log("Adding agent to network.", key)
-        network.add_agent(agent)
+        network.add_node(node)
         self.log("Agent added to network", key)
 
+        node.receive()
+
         environment = network.nodes(type=Environment)[0]
-        environment.connect(whom=agent)
+        environment.connect(whom=node)
         self.log("Agent connect to environment", key)
 
-        if (current_generation == 0):
-            self.log("Agent in generation 0: source transmitting to agent", key)
-            network.nodes(type=RogersSource)[0].transmit(to_whom=agent)
-
-        agent.receive()
-
-        gene = agent.infos(type=LearningGene)[0].contents
+        gene = node.infos(type=LearningGene)[0].contents
         if (gene == "social"):
             self.log("Agent is a social learner, connecting to social source", key)
             social_source = network.nodes(type=RogersSocialSource)[0]
-            social_source.connect(direction="to", whom=agent)
+            social_source.connect(whom=node)
             self.log("Social source generating meme", key)
-            meme = social_source._what(agent=agent)
+            meme = social_source._what(agent=node)
             self.log("social source transmitting to agent", key)
-            social_source.transmit(what=meme, to_whom=agent)
+            social_source.transmit(what=meme, to_whom=node)
         elif (gene == "asocial"):
             self.log("Agent is an asocial learner: environment transmitting to Agent", key)
-            environment.transmit(to_whom=agent)
+            environment.transmit(to_whom=node)
         else:
-            raise ValueError("{} has invalid learning gene value of {}".format(agent, gene))
+            raise ValueError("{} has invalid learning gene value of {}".format(node, gene))
 
-    def transmission_reception_trigger(self, transmissions):
-        # Mark transmissions as received
-        for t in transmissions:
-            t.mark_received()
+    def info_post_request(self, participant_id, node_id, info_type, contents):
+        key = participant_id[0:5]
 
-        for t in transmissions:
-            t.destination.update([t.info])
+        node = Node.query.get(node_id)
+        self.log("Making info", key)
+        info = info_type(origin=node, contents=contents)
 
-    def information_creation_trigger(self, info):
-        ts = Transmission.query.filter_by(destination_id=info.origin_id, status="received").with_entities(Transmission.info_id).all()
+        node.calculate_fitness()
+
+        ts = Transmission.query.filter_by(destination_id=node_id, status="received").with_entities(Transmission.info_id).all()
         infos = Info.query.filter(Info.id.in_([t.info_id for t in ts])).all()
         stimulus = [i for i in infos if type(i) in [State, Meme]][0]
         transformations.Response(info_in=stimulus, info_out=info)
-        info.origin.calculate_fitness()
+
+        return info
 
     def participant_submission_success_trigger(self, participant=None):
 
@@ -241,6 +238,12 @@ class RogersExperiment2a(Experiment):
 
         self.log("Data check passed.", key)
         return True
+
+    def evaluate(self, string):
+        if string in self.trusted_strings:
+            return eval(string)
+        else:
+            raise ValueError("Cannot evaluate {}: not a trusted string".format(string))
 
 
 class LearningGene(Gene):

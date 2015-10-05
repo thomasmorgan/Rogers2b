@@ -181,7 +181,7 @@ class TestRogers(object):
 
             while True:
                 assign_start_time = timenow()
-                agent = exp.assign_agent_to_participant(participant_id=p_id)
+                agent = exp.node_post_request(participant_id=p_id)
                 assign_stop_time = timenow()
                 assign_time += (assign_stop_time - assign_start_time)
                 if agent is None:
@@ -197,12 +197,12 @@ class TestRogers(object):
                         right_answer = "yellow"
                         wrong_answer = "blue"
                     if num_completed_participants == 0:
-                        exp.information_creation_trigger(Meme(origin=agent, contents=right_answer))
+                        exp.info_post_request(participant_id=p_id, node_id=agent.id, info_type=Meme, contents=right_answer)
                     else:
                         if random.random() < 0.75:
-                            exp.information_creation_trigger(Meme(origin=agent, contents=right_answer))
+                            exp.info_post_request(participant_id=p_id, node_id=agent.id, info_type=Meme, contents=right_answer)
                         else:
-                            exp.information_creation_trigger(Meme(origin=agent, contents=wrong_answer))
+                            exp.info_post_request(participant_id=p_id, node_id=agent.id, info_type=Meme, contents=wrong_answer)
                     process_stop_time = timenow()
                     process_time += (process_stop_time - process_start_time)
             bonus = 0.5  # exp.bonus(participant_id=p_id)

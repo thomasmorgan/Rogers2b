@@ -13,8 +13,12 @@ var mycounterbalance = counterbalance;  // they tell you which condition you hav
 
 // All pages to be loaded
 var pages = [
+    "instructions/instruct-0.html",
     "instructions/instruct-1.html",
+    "instructions/instruct-1-5.html",
     "instructions/instruct-2.html",
+    "instructions/instruct-3.html",
+    "instructions/instruct-test.html",
     "instructions/instruct-ready.html",
     "stage.html",
     "postquestionnaire.html",
@@ -24,8 +28,12 @@ var pages = [
 psiTurk.preloadPages(pages);
 
 var instructionPages = [ // add as a list as many pages as you like
+    "instructions/instruct-0.html",
     "instructions/instruct-1.html",
+    "instructions/instruct-1-5.html",
     "instructions/instruct-2.html",
+    "instructions/instruct-3.html",
+    "instructions/instruct-test.html",
     "instructions/instruct-ready.html",
 ];
 
@@ -52,11 +60,11 @@ var StroopExperiment = function() {
 
     // Kick people out if they change their workerId.
     function ensureSameWorker() {
-        workerId = amplify.store("wallace_worker_id")
-        workerIdNew = getParameterByName('workerId')
+        workerId = amplify.store("wallace_worker_id");
+        workerIdNew = getParameterByName('workerId');
 
         if (typeof workerId === 'undefined') {
-            amplify.store("wallace_worker_id", workerIdNew)
+            amplify.store("wallace_worker_id", workerIdNew);
         } else {
             if ((workerIdNew != workerId) && (workerIdNew.substring(0,5) != "debug")) {
                 currentview = psiTurk.showPage('tampering.html');
@@ -75,13 +83,13 @@ var StroopExperiment = function() {
         ensureSameWorker();
 
         reqwest({
-            url: "/agents",
+            url: "/node",
             method: 'post',
-            data: { unique_id: uniqueId },
+            data: { participant_id: uniqueId },
             type: 'json',
             success: function (resp) {
-                agent_id = resp.agents.id;
-                getAllInformation(agent_id);
+                my_node_id = resp.node.id;
+                get_gene(my_node_id);
             },
             error: function (err) {
                 console.log(err);
@@ -96,15 +104,17 @@ var StroopExperiment = function() {
     };
 
     // Get all the infos
-    getAllInformation = function(agent_id) {
+    get_gene = function(my_node_id) {
         reqwest({
-            url: "/information",
+            url: "/info",
             method: 'get',
-            data: { origin_id: agent_id },
+            data: { participant_id: uniqueId,
+                    node_id: my_node_id,
+                    info_type: "LearningGene" },
             type: 'json',
             success: function (resp) {
-                learning_strategy = resp.information[0].contents;
-                getPendingTransmissions(agent_id);
+                learning_strategy = resp.infos[0].contents;
+                get_pending_transmission(my_node_id);
             },
             error: function (err) {
                 console.log(err);
@@ -114,15 +124,18 @@ var StroopExperiment = function() {
         });
     };
 
-    getPendingTransmissions = function(destination_id) {
+    get_pending_transmission = function(my_node_id) {
         reqwest({
-            url: "/transmissions?destination_id=" + destination_id,
+            url: "/transmission",
             method: 'get',
+            data: { participant_id: uniqueId,
+                    node_id: my_node_id,
+                    direction: "incoming",
+                    status: "pending" },
             type: 'json',
             success: function (resp) {
-                console.log(resp);
                 info_id = resp.transmissions[0].info_id;
-                info = getInfo(info_id);
+                info = get_info(info_id);
             },
             error: function (err) {
                 console.log(err);
@@ -132,10 +145,13 @@ var StroopExperiment = function() {
         });
     };
 
-    getInfo = function(id) {
+    get_info = function(id) {
         reqwest({
-            url: "/information/" + id,
+            url: "/info",
             method: 'get',
+            data: { participant_id: uniqueId,
+                    node_id: my_node_id,
+                    info_id: id },
             type: 'json',
             success: function (resp) {
 
@@ -153,7 +169,7 @@ var StroopExperiment = function() {
 
                     $("#instructions").text("Are there more blue or yellow dots?");
 
-                    state = resp.contents;
+                    state = resp.infos[0].contents;
                     regenerateDisplay(state);
 
                     $("#more-blue").addClass('disabled');
@@ -172,22 +188,32 @@ var StroopExperiment = function() {
 
                     $("#instructions").html("Are there more blue or yellow dots?");
 
-                    $("#more-blue").addClass('disabled');
-                    $("#more-yellow").addClass('disabled');
+                    meme = resp.infos[0].contents;
 
-                    meme = resp.contents;
-
-                    if (meme == "blue") {
-                        $("#stimulus").attr("src", "/static/images/blue_social.jpg");
-                    } else if (meme == "yellow") {
-                        $("#stimulus").attr("src", "/static/images/yellow_social.jpg");
+                    if (meme == "blue" | meme == "yellow") {
+                        $("#stimulus_div").html("<br><br><br><br>Someone in the previous group decided:<br><font color='#428bca'><b>BLUE</b></font>");
+                    } else {
+                        if (meme == "yellow") {
+                            $("#stimulus_div").html("<br><br><br><br>Someone in the previous group decided:<br><font color='#FBB829'><b>YELLOW</b></font>");
+                        } else {
+                            meme = JSON.parse(meme);
+                            if (meme.blue === undefined) {
+                                $("#stimulus_div").html("<br><br>Three groups ago:<br><b><font color='#428bca'>" +
+                                  add_people_to_text(meme.blue3) + " decided BLUE</font></b> and <b><font color='#FBB829'>" +
+                                  add_people_to_text(meme.yellow3) + " decided YELLOW</font></b><br><br>" +
+                                  "Two groups ago:<br><b><font color='#428bca'>" +
+                                  add_people_to_text(meme.blue2) + " decided BLUE</font></b> and <b><font color='#FBB829'>" +
+                                  add_people_to_text(meme.yellow2) + " decided YELLOW</font></b><br><br>" +
+                                  "One group ago:<br><b><font color='#428bca'>" +
+                                  add_people_to_text(meme.blue1) + " decided BLUE</font></b> and <b><font color='#FBB829'>" +
+                                  add_people_to_text(meme.yellow1) + " decided YELLOW</font></b>");
+                            } else {
+                                $("#stimulus_div").html("<br><br><br><br>In the previous group:<br><b><font color='#428bca'>" +
+                                  add_people_to_text(meme.blue) + " decided BLUE</b></font> and <b><font color='#FBB829'>" +
+                                  add_people_to_text(meme.yellow) + " decided YELLOW</b></font>");
+                            }
+                        }
                     }
-                    $("#stimulus").show();
-                    setTimeout(function() {
-                        $("#stimulus").hide();
-                        $("#more-blue").removeClass('disabled');
-                        $("#more-yellow").removeClass('disabled');
-                    }, 2000);
 
                     lock = false;
                 }
@@ -201,6 +227,14 @@ var StroopExperiment = function() {
     };
 
     createAgent();
+
+    function add_people_to_text(number) {
+        if (number == 1) {
+            return "" + number + " person";
+        } else {
+            return "" + number + " people";
+        }
+    }
 
     function presentDisplay (argument) {
         for (var i = dots.length - 1; i >= 0; i--) {
@@ -295,14 +329,16 @@ var StroopExperiment = function() {
             $("#more-blue").addClass('disabled');
             $("#more-blue").html('Sending...');
             $("#reproduction").val("");
+            $("#stimulus_div").html("");
 
             reqwest({
-                url: "/information",
+                url: "/info",
                 method: 'post',
                 data: {
-                    origin_id: agent_id,
+                    participant_id: uniqueId,
+                    node_id: my_node_id,
                     contents: "blue",
-                    info_type: "meme"
+                    info_type: "Meme"
                 },
                 success: function (resp) {
                     $("#more-blue").removeClass('disabled');
@@ -320,14 +356,16 @@ var StroopExperiment = function() {
             $("#more-yellow").addClass('disabled');
             $("#more-yellow").html('Sending...');
             $("#reproduction").val("");
+            $("#stimulus_div").html("");
 
             reqwest({
-                url: "/information",
+                url: "/info",
                 method: 'post',
                 data: {
-                    origin_id: agent_id,
+                    participant_id: uniqueId,
+                    node_id: my_node_id,
                     contents: "yellow",
-                    info_type: "meme"
+                    info_type: "Meme"
                 },
                 success: function (resp) {
                     $("#more-yellow").removeClass('disabled');
