@@ -191,24 +191,24 @@ var StroopExperiment = function() {
                     meme = resp.infos[0].contents;
 
                     if (meme == "blue" | meme == "yellow") {
-                        $("#stimulus_div").html("<br><br><br><br>Someone in the previous group decided:<br><font color='#428bca'><b>BLUE</b></font>");
+                        $("#stimulus_div").html("<br><br><br><br>Someone in the previous batch decided:<br><font color='#428bca'><b>BLUE</b></font>");
                     } else {
                         if (meme == "yellow") {
-                            $("#stimulus_div").html("<br><br><br><br>Someone in the previous group decided:<br><font color='#FBB829'><b>YELLOW</b></font>");
+                            $("#stimulus_div").html("<br><br><br><br>Someone in the previous batch decided:<br><font color='#FBB829'><b>YELLOW</b></font>");
                         } else {
                             meme = JSON.parse(meme);
                             if (meme.blue === undefined) {
-                                $("#stimulus_div").html("<br><br>Three groups ago:<br><b><font color='#428bca'>" +
+                                $("#stimulus_div").html("<br><br>Three batches ago:<br><b><font color='#428bca'>" +
                                   add_people_to_text(meme.blue3) + " decided BLUE</font></b> and <b><font color='#FBB829'>" +
                                   add_people_to_text(meme.yellow3) + " decided YELLOW</font></b><br><br>" +
-                                  "Two groups ago:<br><b><font color='#428bca'>" +
+                                  "Two batches ago:<br><b><font color='#428bca'>" +
                                   add_people_to_text(meme.blue2) + " decided BLUE</font></b> and <b><font color='#FBB829'>" +
                                   add_people_to_text(meme.yellow2) + " decided YELLOW</font></b><br><br>" +
-                                  "One group ago:<br><b><font color='#428bca'>" +
+                                  "One batch ago:<br><b><font color='#428bca'>" +
                                   add_people_to_text(meme.blue1) + " decided BLUE</font></b> and <b><font color='#FBB829'>" +
                                   add_people_to_text(meme.yellow1) + " decided YELLOW</font></b>");
                             } else {
-                                $("#stimulus_div").html("<br><br><br><br>In the previous group:<br><b><font color='#428bca'>" +
+                                $("#stimulus_div").html("<br><br><br><br>In the previous batch:<br><b><font color='#428bca'>" +
                                   add_people_to_text(meme.blue) + " decided BLUE</b></font> and <b><font color='#FBB829'>" +
                                   add_people_to_text(meme.yellow) + " decided YELLOW</b></font>");
                             }
