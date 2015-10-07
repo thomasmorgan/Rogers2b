@@ -103,13 +103,7 @@ class RogersExperiment2a(Experiment):
         else:
             raise ValueError("{} has invalid learning gene value of {}".format(node, gene))
 
-    def info_post_request(self, participant_id, node_id, info_type, contents):
-        key = participant_id[0:5]
-
-        node = Node.query.get(node_id)
-        self.log("Making info", key)
-        info = info_type(origin=node, contents=contents)
-
+    def info_post_request(self, participant_id, node, info):
         node.calculate_fitness()
 
         ts = Transmission.query.filter_by(destination_id=node_id, status="received").with_entities(Transmission.info_id).all()
@@ -117,9 +111,7 @@ class RogersExperiment2a(Experiment):
         stimulus = [i for i in infos if type(i) in [State, Meme]][0]
         transformations.Response(info_in=stimulus, info_out=info)
 
-        return info
-
-    def participant_submission_success_trigger(self, participant=None):
+    def submission_successful(self, participant=None):
 
         key = participant.uniqueid[0:5]
 
