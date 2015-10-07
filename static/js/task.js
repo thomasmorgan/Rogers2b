@@ -169,7 +169,7 @@ var StroopExperiment = function() {
 
                     $("#instructions").text("Are there more blue or yellow dots?");
 
-                    state = resp.infos[0].contents;
+                    state = resp.info.contents;
                     regenerateDisplay(state);
 
                     $("#more-blue").addClass('disabled');
