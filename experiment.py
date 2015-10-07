@@ -106,7 +106,7 @@ class RogersExperiment2a(Experiment):
     def info_post_request(self, participant_id, node, info):
         node.calculate_fitness()
 
-        ts = Transmission.query.filter_by(destination_id=node_id, status="received").with_entities(Transmission.info_id).all()
+        ts = Transmission.query.filter_by(destination_id=node.id, status="received").with_entities(Transmission.info_id).all()
         infos = Info.query.filter(Info.id.in_([t.info_id for t in ts])).all()
         stimulus = [i for i in infos if type(i) in [State, Meme]][0]
         transformations.Response(info_in=stimulus, info_out=info)
