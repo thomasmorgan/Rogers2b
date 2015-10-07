@@ -188,7 +188,7 @@ var StroopExperiment = function() {
 
                     $("#instructions").html("Are there more blue or yellow dots?");
 
-                    meme = resp.infos[0].contents;
+                    meme = resp.info.contents;
 
                     if (meme == "blue" | meme == "yellow") {
                         $("#stimulus_div").html("<br><br><br><br>Someone in the previous batch decided:<br><font color='#428bca'><b>BLUE</b></font>");
