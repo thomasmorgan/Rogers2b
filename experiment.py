@@ -36,7 +36,7 @@ class RogersExperiment2a(Experiment):
         self.environment_type = RogersEnvironment
         self.bonus_payment = 1.0
         self.initial_recruitment_size = self.generation_size
-        self.trusted_strings.extend(["LearningGene"])
+        self.known_classes["LearningGene"] = LearningGene
 
         if not self.networks():
             self.setup()
@@ -238,12 +238,6 @@ class RogersExperiment2a(Experiment):
 
         self.log("Data check passed.", key)
         return True
-
-    def evaluate(self, string):
-        if string in self.trusted_strings:
-            return eval(string)
-        else:
-            raise ValueError("Cannot evaluate {}: not a trusted string".format(string))
 
 
 class LearningGene(Gene):
