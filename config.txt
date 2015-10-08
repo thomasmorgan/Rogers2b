@@ -4,7 +4,7 @@ mode = sandbox
 auto_recruit = true
 
 [HIT Configuration]
-title = Judge the dots, Advanced Edition
+title = Judge the dots 2
 description = Look at some dots and determine if there are more blue or yellow ones
 amt_keywords = Psychology, vision, dots
 base_payment = 1.00
