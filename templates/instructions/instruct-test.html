@@ -10,28 +10,99 @@
 
     <h3 id="test-title" align="center"><b>Please answer the following questions - you must get them all right to proceed</b></h3>
 
-    <p>1. How many rounds (sets of dots) are there? (type the number, e.g. 45)   <textarea id="q1" class="test-text-box" rows="1" maxlength="5"></textarea></p>
-    <p>2. How many participants take part in each batch? (type the number, e.g. 5)   <textarea id="q2" class="test-text-box" rows="1" maxlength="5"></textarea></p>
-    <p>3. If a set of dots changed after the 8th batch, after which batch will it next change? (type the number, e.g. 12)   <textarea id="q3"class="test-text-box" rows="1" maxlength="5"></textarea></p>
+    <p>1. If, on every round you see the decisions of others, but choose to see the dots as well, by what percentage will your bonus be reduced? (type the number, e.g. 100)   <textarea id="q2" class="test-text-box" rows="1" maxlength="5"></textarea></p>
+    <p id="a1"> </p>
+    <p>2. If a set of dots changed after the 8th batch, after which batch will it next change? (type the number, e.g. 12)   <textarea id="q3"class="test-text-box" rows="1" maxlength="5"></textarea></p>
+    <p id="a2"> </p>
 
-    <p>4. True or false? (tick the true sentences)</p>
+    <p>3. True or false? (tick the true sentences)</p>
     <p><input type="checkbox" id="tf1"></input>  If you see several mostly blue sets in a row, the next set is probably mostly yellow.</p>
+    <p id="tfa1"> </p>
     <p><input type="checkbox" id="tf2"></input>  For each set of dots, you will either get to see the dots yourself or you will see what other people decided.</p>
-    <p><input type="checkbox" id="tf3"></input>  Sometimes you will see what other people thought, but you will always get to see the dots yourself.</p>
+    <p id="tfa2"> </p>
+    <p><input type="checkbox" id="tf3"></input>  Sometimes you will see what other people thought, but you can always to see the dots yourself.</p>
+    <p id="tfa3"> </p>
     <p><input type="checkbox" id="tf4"></input>  Even if you saw the dots yourself, they still might change before you make your decision.</p>
+    <p id="tfa4"> </p>
     <p><input type="checkbox" id="tf5"></input>  When you are told what other people decided, you can be sure those people always saw the dots themselves.</p>
+    <p id="tfa5"> </p>
     <p><input type="checkbox" id="tf6"></input>  The decisions of people from three batches ago are worthless because the dots will definitely have changed since then.</p>
+    <p id="tfa6"> </p>
     <p><input type="checkbox" id="tf7"></input>  A set of dots that changed two batches ago cannot have also changed one batch ago.</p>
+    <p id="tfa7"> </p>
+    <p><input type="checkbox" id="tf8"></input>  Even if you always choose to see the dots, you can still get a bonus.</p>
+    <p id="tfa8"> </p>
 
     <hr>
     <script>
         function checkAnswers() {
-            var psiTurk = new PsiTurk(uniqueId, adServerLoc, mode);
-            if (document.getElementById("q1").value == 125 & document.getElementById("q2").value == 10 & document.getElementById("q3").value == 18 & document.getElementById("tf1").checked == false & document.getElementById("tf2").checked == true & document.getElementById("tf3").checked == false & document.getElementById("tf4").checked == false & document.getElementById("tf5").checked == false & document.getElementById("tf6").checked == false & document.getElementById("tf7").checked == true) {
-                console.log("you got it right!");
+            // var psiTurk = new PsiTurk(uniqueId, adServerLoc, mode);
+            all_right = true;
+            if (document.getElementById("q2").value != 50) {
+                all_right = false;
+                $("#a1").html("<font color='red'>    Wrong - choosing to see the dots reduces your bonus by 50%.</font>");
+            } else {
+                $("#a1").html("");
+            }
+            if (document.getElementById("q3").value != 18) {
+                all_right = false;
+                $("#a2").html("<font color='red'>    Wrong - each set of dots change every 10 batches, so a set that changed after batch 8 would change next after batch 18.</font>");
+            } else {
+                $("#a2").html("");
+            }
+            if (document.getElementById("tf1").checked == true) {
+                all_right = false;
+                $("#tfa1").html("<font color='red'>    Wrong - each set of dots is independent, even if you see several that are mostly blue, it is still random whether the next one is mostly blue or mostly yellow.</font>");
+            } else {
+                $("#tfa1").html("");
+            }
+            if (document.getElementById("tf2").checked == true) {
+                all_right = false;
+                $("#tfa2").html("<font color='red'>    Wrong - if you see what other people decided you can choose to see the dots as well.</font>");
+            } else {
+                $("#tfa2").html("");
+            }
+            if (document.getElementById("tf3").checked == false) {
+                all_right = false;
+                $("#tfa3").html("<font color='red'>    Wrong - even if you see what other people thought, you can choose to see the dots too.</font>");
+            } else {
+                $("#tfa3").html("");
+            }
+            if (document.getElementById("tf4").checked == true) {
+                all_right = false;
+                $("#tfa4").html("<font color='red'>    Wrong - the dots only change between batches of participants, they won't change while you are playing.</font>");
+            } else {
+                $("#tfa4").html("");
+            }
+            if (document.getElementById("tf5").checked == true) {
+                all_right = false;
+                $("#tfa5").html("<font color='red'>    Wrong - other people might not have seen the dots themselves, they might have seen what others before them decided instead.</font>");
+            } else {
+                $("#tfa5").html("");
+            }
+            if (document.getElementById("tf6").checked == true) {
+                all_right = false;
+                $("#tfa6").html("<font color='red'>    Wrong - the dots change every 10 batches, so they might have changed since three batches ago, but they might not.</font>");
+            } else {
+                $("#tfa6").html("");
+            }
+            if (document.getElementById("tf7").checked == false) {
+                all_right = false;
+                $("#tfa7").html("<font color='red'>    Wrong - dots change every 10 batches, so they can't change two batches in a row.</font>");
+            } else {
+                $("#tfa7").html("");
+            }
+            if (document.getElementById("tf8").checked == false) {
+                all_right = false;
+                $("#tfa8").html("<font color='red'>    Wrong - always choosing to see the dots only reduces your potential bonus by 50%.</font>");
+            } else {
+                $("#tfa8").html("");
+            }
+
+            if (all_right == true) {
                 document.getElementById("next").click();
             } else {
-                $("#test-title").html("<font color='red'><b>You got something wrong, please go back to re-read the instructions and try again.</b></font>");
+                $("#test-title").html("<font color='red'><b>You got something wrong, please correct your answers and try again.</b></font>");
             }
         }
     </script>
