@@ -11,6 +11,7 @@ from sqlalchemy import Integer, Float
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql.expression import cast
 from sqlalchemy import and_
+from flask import Blueprint, request, Response
 from json import dumps
 import random
 
@@ -448,3 +449,54 @@ class RogersEnvironment(Environment):
         new_contents = 1-current_contents
         info_out = State(origin=self, contents=new_contents)
         transformations.Mutation(info_in=current_state, info_out=info_out)
+
+from wallace import db
+
+extra_routes = Blueprint(
+    'extra_routes', __name__,
+    template_folder='templates',
+    static_folder='static')
+
+
+@extra_routes.route("/saw_the_dots", methods=["POST"])
+def saw_the_dots():
+
+    exp = RogersExperiment2b(db.get_session())
+
+    if request.method == "POST":
+
+        # get the participant_id
+        try:
+            participant_id = request.values["participant_id"]
+            key = participant_id[0:5]
+        except:
+            exp.log("Error: /saw_the_dots request, participant_id not specified")
+            page = exp.error_page(error_type="/saw_the_dots, participant_id not specified")
+            js = dumps({"status": "error", "html": page})
+            return Response(js, status=403, mimetype='application/json')
+
+        # get the node_id
+        try:
+            node_id = request.values["node_id"]
+            if not node_id.isdigit():
+                exp.log(
+                    "Error: /saw_the_dots request, non-numeric node_id: {}"
+                    .format(node_id), key)
+                page = exp.error_page(error_type="/saw_the_dots, non-numeric node_id")
+                js = dumps({"status": "error", "html": page})
+                return Response(js, status=403, mimetype='application/json')
+        except:
+            exp.log("Error: /saw_the_dots request, node_id not specified", key)
+            page = exp.error_page(error_type="/saw_the_dots, node_id not specified")
+            js = dumps({"status": "error", "html": page})
+            return Response(js, status=403, mimetype='application/json')
+
+        node = Node.query.get(node_id)
+        node.saw_the_dots = 1
+        exp.save()
+
+        data = {"status": "success"}
+        return Response(dumps(data), status=200, mimetype='application/json')
+
+    data = {"status": "success"}
+    return Response(dumps(data), status=200, mimetype='application/json')
