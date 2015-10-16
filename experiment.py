@@ -427,7 +427,11 @@ class RogersAgent(Agent):
         c = 0.3*b
         baseline = c+0.0001
 
-        self.fitness = (baseline + self.score * b - is_asocial * c) ** e
+        if is_asocial:
+            self.fitness = (baseline + self.score * b - c) ** e
+        else:
+            saw_the_dots = self.saw_the_dots == 1
+            self.fitness = (baseline + self.score * b - c * saw_the_dots) ** e
 
     def update(self, infos):
         for info_in in infos:
