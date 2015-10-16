@@ -390,6 +390,18 @@ class RogersAgent(Agent):
     def proportion(self):
         return cast(self.property4, Float)
 
+    @hybrid_property
+    def saw_the_dots(self):
+        return int(self.property5)
+
+    @saw_the_dots.setter
+    def saw_the_dots(self, saw_the_dots):
+        self.property5 = repr(saw_the_dots)
+
+    @saw_the_dots.expression
+    def saw_the_dots(self):
+        return cast(self.property5, Integer)
+
     def calculate_fitness(self):
 
         from operator import attrgetter
