@@ -114,7 +114,7 @@ var StroopExperiment = function() {
             type: 'json',
             success: function (resp) {
                 learning_strategy = resp.infos[0].contents;
-                get_pending_transmission(my_node_id);
+                get_pending_transmissions(my_node_id);
             },
             error: function (err) {
                 console.log(err);
@@ -124,7 +124,7 @@ var StroopExperiment = function() {
         });
     };
 
-    get_pending_transmission = function(my_node_id) {
+    get_pending_transmissions = function(my_node_id) {
         reqwest({
             url: "/transmission",
             method: 'get',
@@ -134,8 +134,12 @@ var StroopExperiment = function() {
                     status: "pending" },
             type: 'json',
             success: function (resp) {
-                info_id = resp.transmissions[0].info_id;
-                info = get_info(info_id);
+                if (learning_strategy == "asocial") {
+                    infos_to_get = [resp.transmissions[0].info_id];
+                } else {
+                    infos_to_get = [resp.transmissions[0].info_id, resp.transmissions[1].info_id];
+                }
+                get_first_info(infos_to_get[0]);
             },
             error: function (err) {
                 console.log(err);
@@ -145,77 +149,24 @@ var StroopExperiment = function() {
         });
     };
 
-    get_info = function(id) {
+    get_first_info = function(info_id) {
         reqwest({
             url: "/info",
             method: 'get',
             data: { participant_id: uniqueId,
                     node_id: my_node_id,
-                    info_id: id },
+                    info_id: info_id },
             type: 'json',
             success: function (resp) {
-
-                trial = trial + 1;
-                $("#trial-number").html(trial);
-                if (trial <= num_practice_trials) {
-                    $("#practice-trial").html("This is a practice trial");
-                } else {
-                    $("#practice-trial").html("This is NOT a practice trial");
-                }
-
-
-                // Show the participant the stimulus.
-                if (learning_strategy === "asocial") {
-
-                    $("#instructions").text("Are there more blue or yellow dots?");
-
+                if (resp.info.type == "state") {
                     state = resp.info.contents;
-                    regenerateDisplay(state);
-
-                    $("#more-blue").addClass('disabled');
-                    $("#more-yellow").addClass('disabled');
-
-                    presentDisplay();
-
-                    $("#stimulus-stage").show();
-                    $("#response-form").hide();
-                    $("#more-yellow").show();
-                    $("#more-blue").show();
-                }
-
-                // Show the participant the hint.
-                if (learning_strategy == "social") {
-
-                    $("#instructions").html("Are there more blue or yellow dots?");
-
+                } else {
                     meme = resp.info.contents;
-
-                    if (meme == "blue" | meme == "yellow") {
-                        $("#stimulus_div").html("<br><br><br><br>Someone in the previous batch decided:<br><font color='#428bca'><b>BLUE</b></font>");
-                    } else {
-                        if (meme == "yellow") {
-                            $("#stimulus_div").html("<br><br><br><br>Someone in the previous batch decided:<br><font color='#FBB829'><b>YELLOW</b></font>");
-                        } else {
-                            meme = JSON.parse(meme);
-                            if (meme.blue === undefined) {
-                                $("#stimulus_div").html("<br><br>Three batches ago:<br><b><font color='#428bca'>" +
-                                  add_people_to_text(meme.blue3) + " decided BLUE</font></b> and <b><font color='#FBB829'>" +
-                                  add_people_to_text(meme.yellow3) + " decided YELLOW</font></b><br><br>" +
-                                  "Two batches ago:<br><b><font color='#428bca'>" +
-                                  add_people_to_text(meme.blue2) + " decided BLUE</font></b> and <b><font color='#FBB829'>" +
-                                  add_people_to_text(meme.yellow2) + " decided YELLOW</font></b><br><br>" +
-                                  "One batch ago:<br><b><font color='#428bca'>" +
-                                  add_people_to_text(meme.blue1) + " decided BLUE</font></b> and <b><font color='#FBB829'>" +
-                                  add_people_to_text(meme.yellow1) + " decided YELLOW</font></b>");
-                            } else {
-                                $("#stimulus_div").html("<br><br><br><br>In the previous batch:<br><b><font color='#428bca'>" +
-                                  add_people_to_text(meme.blue) + " decided BLUE</b></font> and <b><font color='#FBB829'>" +
-                                  add_people_to_text(meme.yellow) + " decided YELLOW</b></font>");
-                            }
-                        }
-                    }
-
-                    lock = false;
+                }
+                if (learning_strategy == "social") {
+                    get_second_info(infos_to_get[1]);
+                } else {
+                    presentStimuli();
                 }
             },
             error: function (err) {
@@ -224,6 +175,92 @@ var StroopExperiment = function() {
                 $('body').html(err_response.html);
             }
         });
+    };
+
+    get_second_info = function(info_id) {
+        reqwest({
+            url: "/info",
+            method: 'get',
+            data: { participant_id: uniqueId,
+                    node_id: my_node_id,
+                    info_id: info_id },
+            type: 'json',
+            success: function (resp) {
+                if (resp.info.type == "state") {
+                    state = resp.info.contents;
+                } else {
+                    meme = resp.info.contents;
+                }
+                presentStimuli();
+            },
+            error: function (err) {
+                console.log(err);
+                err_response = JSON.parse(err.response);
+                $('body').html(err_response.html);
+            }
+        });
+    };
+
+
+    presentStimuli = function() {
+        // update the trial number label
+        trial = trial + 1;
+        $("#trial-number").html(trial);
+        if (trial <= num_practice_trials) {
+            $("#practice-trial").html("This is a practice trial");
+        } else {
+            $("#practice-trial").html("This is NOT a practice trial");
+        }
+
+        $("#instructions").html("Are there more blue or yellow dots?");
+
+        // Show the participant the stimulus.
+        if (learning_strategy === "asocial") {
+
+            regenerateDisplay(state);
+
+            $("#more-blue").addClass('disabled');
+            $("#more-yellow").addClass('disabled');
+
+            presentDisplay();
+
+            $("#stimulus-stage").show();
+            $("#response-form").hide();
+            $("#more-yellow").show();
+            $("#more-blue").show();
+        }
+
+        // Show the participant the hint.
+        if (learning_strategy == "social") {
+
+            document.getElementById("see_dots_div").style.visibility = "visible";
+
+            if (meme == "blue" | meme == "yellow") {
+                $("#stimulus_div").html("<br><br><br><br>Someone in the previous batch decided:<br><font color='#428bca'><b>BLUE</b></font>");
+            } else {
+                if (meme == "yellow") {
+                    $("#stimulus_div").html("<br><br><br><br>Someone in the previous batch decided:<br><font color='#FBB829'><b>YELLOW</b></font>");
+                } else {
+                    meme = JSON.parse(meme);
+                    if (meme.blue === undefined) {
+                        $("#stimulus_div").html("<br><br>Three batches ago:<br><b><font color='#428bca'>" +
+                          add_people_to_text(meme.blue3) + " decided BLUE</font></b> and <b><font color='#FBB829'>" +
+                          add_people_to_text(meme.yellow3) + " decided YELLOW</font></b><br><br>" +
+                          "Two batches ago:<br><b><font color='#428bca'>" +
+                          add_people_to_text(meme.blue2) + " decided BLUE</font></b> and <b><font color='#FBB829'>" +
+                          add_people_to_text(meme.yellow2) + " decided YELLOW</font></b><br><br>" +
+                          "One batch ago:<br><b><font color='#428bca'>" +
+                          add_people_to_text(meme.blue1) + " decided BLUE</font></b> and <b><font color='#FBB829'>" +
+                          add_people_to_text(meme.yellow1) + " decided YELLOW</font></b>");
+                    } else {
+                        $("#stimulus_div").html("<br><br><br><br>In the previous batch:<br><b><font color='#428bca'>" +
+                          add_people_to_text(meme.blue) + " decided BLUE</b></font> and <b><font color='#FBB829'>" +
+                          add_people_to_text(meme.yellow) + " decided YELLOW</b></font>");
+                    }
+                }
+            }
+            lock = false;
+        }
     };
 
     createAgent();
@@ -325,6 +362,7 @@ var StroopExperiment = function() {
     // });
 
     reportBlue = function () {
+        document.getElementById("see_dots_div").style.visibility = "hidden";
         if(lock === false) {
             $("#more-blue").addClass('disabled');
             $("#more-blue").html('Sending...');
@@ -352,6 +390,7 @@ var StroopExperiment = function() {
     };
 
     reportYellow = function () {
+        document.getElementById("see_dots_div").style.visibility = "hidden";
         if(lock === false) {
             $("#more-yellow").addClass('disabled');
             $("#more-yellow").html('Sending...');
@@ -393,6 +432,33 @@ var StroopExperiment = function() {
 
     $("#more-blue").click(function() {
         reportBlue();
+    });
+
+    $("#see_dots_button").click(function() {
+        reqwest({
+            url: "/saw_the_dots",
+            method: 'post',
+            data: {
+                participant_id: uniqueId,
+                node_id: my_node_id,
+            },
+            success: function (resp) {
+                document.getElementById("see_dots_div").style.visibility = "hidden";
+                old_html = $("#stimulus_div").html();
+                $("#stimulus_div").html("");
+                regenerateDisplay(state);
+                presentDisplay();
+                setTimeout(function() {
+                    $("#stimulus_div").html(old_html);
+                }, 1050);
+            },
+            error: function (err) {
+                console.log(err);
+                err_response = JSON.parse(err.response);
+                $('body').html(err_response.html);
+            }
+        });
+        
     });
 };
 
