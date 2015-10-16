@@ -85,7 +85,7 @@ class RogersExperiment2b(Experiment):
 
         environment = network.nodes(type=Environment)[0]
         environment.connect(whom=node)
-        self.log("Agent connect to environment", key)
+        environment.transmit(to_whom=node)
 
         gene = node.infos(type=LearningGene)[0].contents
         if (gene == "social"):
@@ -95,7 +95,7 @@ class RogersExperiment2b(Experiment):
             meme = social_source._what(agent=node)
             social_source.transmit(what=meme, to_whom=node)
         elif (gene == "asocial"):
-            environment.transmit(to_whom=node)
+            pass
         else:
             raise ValueError("{} has invalid learning gene value of {}".format(node, gene))
 
