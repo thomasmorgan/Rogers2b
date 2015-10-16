@@ -168,8 +168,21 @@ class RogersExperiment2b(Experiment):
         if len(nodes) == 0:
             self.log("Participant has 0 nodes - cannot calculate bonus!", key)
             return 0
-        score = [node.score for node in nodes]
-        average = float(sum(score))/float(len(score))
+
+        node_ids = [n.id for n in nodes]
+        genes = LearningGene.query.filter(LearningGene.origin_id.in_(node_ids)).all()
+
+        scores = []
+        for node in nodes:
+            gene = [g for g in genes if g.origin_id == node.id][0].contents
+            if gene == "asocial":
+                scores.append(node.score)
+            else:
+                if node.saw_the_dots == 1:
+                    scores.append(float(node.score)*0.75)
+                else:
+                    scores.append(node.score)
+        average = float(sum(scores))/float(len(scores))
         bonus = round(max(0.0, ((average-0.5)*2))*self.bonus_payment, 2)
         return bonus
 
