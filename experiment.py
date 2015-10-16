@@ -78,9 +78,7 @@ class RogersExperiment2b(Experiment):
         node.generation = current_generation
         self.log("Agent is {}th agent in network, assigned to generation {}".format(num_agents, current_generation), key)
 
-        self.log("Adding agent to network.", key)
         network.add_node(node)
-        self.log("Agent added to network", key)
 
         node.receive()
 
@@ -93,12 +91,9 @@ class RogersExperiment2b(Experiment):
             self.log("Agent is a social learner, connecting to social source", key)
             social_source = network.nodes(type=RogersSocialSource)[0]
             social_source.connect(whom=node)
-            self.log("Social source generating meme", key)
             meme = social_source._what(agent=node)
-            self.log("social source transmitting to agent", key)
             social_source.transmit(what=meme, to_whom=node)
         elif (gene == "asocial"):
-            self.log("Agent is an asocial learner: environment transmitting to Agent", key)
             environment.transmit(to_whom=node)
         else:
             raise ValueError("{} has invalid learning gene value of {}".format(node, gene))
@@ -134,11 +129,10 @@ class RogersExperiment2b(Experiment):
             for e in environments:
                 e.step()
         else:
-            self.log("Participant was not final in generation {}: not stepping".format(current_generation), key)
+            pass
 
     def recruit(self):
         key = "-----"
-        self.log("Running Rogers recruit()", key)
         participants = Participant.query.with_entities(Participant.status).all()
 
         # if all networks are full, close recruitment,
@@ -173,11 +167,9 @@ class RogersExperiment2b(Experiment):
         if len(nodes) == 0:
             self.log("Participant has 0 nodes - cannot calculate bonus!", key)
             return 0
-        self.log("calculating bonus...", key)
         score = [node.score for node in nodes]
         average = float(sum(score))/float(len(score))
         bonus = round(max(0.0, ((average-0.5)*2))*self.bonus_payment, 2)
-        self.log("bonus calculated, returning {}".format(bonus), key)
         return bonus
 
     def participant_attention_check(self, participant=None):
@@ -191,7 +183,6 @@ class RogersExperiment2b(Experiment):
         scores = [n.score for n in participant_nodes]
 
         if participant_nodes:
-            self.log("Scoring participant nodes from catch networks", key)
             avg = sum(scores)/float(len(scores))
         else:
             self.log("Participant has no nodes from catch networks, passing by default", key)
