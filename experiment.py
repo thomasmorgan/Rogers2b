@@ -15,10 +15,10 @@ from json import dumps
 import random
 
 
-class RogersExperiment2a(Experiment):
+class RogersExperiment2b(Experiment):
 
     def __init__(self, session):
-        super(RogersExperiment2a, self).__init__(session)
+        super(RogersExperiment2b, self).__init__(session)
 
         self.task = "Rogers network game"
         self.verbose = True
@@ -43,7 +43,7 @@ class RogersExperiment2a(Experiment):
         self.save()
 
     def setup(self):
-        super(RogersExperiment2a, self).setup()
+        super(RogersExperiment2b, self).setup()
 
         for net in random.sample(self.networks(role="experiment"), self.catch_repeats):
             net.role = "catch"
