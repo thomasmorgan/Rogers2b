@@ -121,12 +121,12 @@ class RogersExperiment2b(Experiment):
                 remainder = 10
             networks = [remainder]
             temp = remainder+10
-            while temp < 125:
+            while temp <= 125:
                 networks.append(temp)
                 temp = temp+10
 
-            self.log("Participant was final particpant in generation {}: environments {} stepping".format(current_generation, networks), key)
-            environments = Environment.query.filter(Environment.id.in_(networks)).all()
+            self.log("Participant was final particpant in generation {}: environments in networks {} stepping".format(current_generation, networks), key)
+            environments = Environment.query.filter(Environment.network_id.in_(networks)).all()
             for e in environments:
                 e.step()
         else:
