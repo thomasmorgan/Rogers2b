@@ -31,9 +31,9 @@ class RogersExperiment2b(Experiment):
         self.social_source_kinds = ["single_agent", "single_generation", "triple_generation"]*(self.experiment_repeats + self.practice_repeats)
         self.catch_difficulty = 0.80
         self.min_acceptable_performance = 10/float(12)
-        self.generation_size = 10
+        self.generation_size = 2
         self.network = lambda: DiscreteGenerational(
-            generations=12, generation_size=self.generation_size, initial_source=True)
+            generations=4, generation_size=self.generation_size, initial_source=True)
         self.environment_type = RogersEnvironment
         self.bonus_payment = 1.0
         self.initial_recruitment_size = self.generation_size
