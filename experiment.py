@@ -74,6 +74,8 @@ class RogersExperiment2b(Experiment):
 
         key = participant_id[0:5]
 
+        node.saw_the_dots = 0
+
         num_agents = network.size(type=Agent)
         current_generation = int((num_agents-1)/float(network.generation_size))
         node.generation = current_generation
