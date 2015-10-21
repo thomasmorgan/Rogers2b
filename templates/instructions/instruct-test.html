@@ -10,12 +10,14 @@
 
     <h3 id="test-title" align="center"><b>Please answer the following questions - you must get them all right to proceed</b></h3>
 
-    <p>1. If, on every round you see the decisions of others, but choose to see the dots as well, by what percentage will your bonus be reduced? (type the number, e.g. 100)   <textarea id="q2" class="test-text-box" rows="1" maxlength="5"></textarea></p>
+    <p>1. If, on every round you see the decisions of others, but choose to see the dots as well, by what percentage will your bonus be reduced? (type the number, e.g. 100)   <textarea id="q1" class="test-text-box" rows="1" maxlength="5"></textarea></p>
     <p id="a1"> </p>
-    <p>2. If a set of dots changed after the 8th batch, after which batch will it next change? (type the number, e.g. 12)   <textarea id="q3"class="test-text-box" rows="1" maxlength="5"></textarea></p>
+    <p>2. If you blindly guess, what percentage of your possible bonus are you likely to receive? (type the number, e.g. 100)   <textarea id="q2" class="test-text-box" rows="1" maxlength="5"></textarea></p>
     <p id="a2"> </p>
+    <p>3. If a set of dots changed after the 8th batch, after which batch will it next change? (type the number, e.g. 12)   <textarea id="q3"class="test-text-box" rows="1" maxlength="5"></textarea></p>
+    <p id="a3"> </p>
 
-    <p>3. True or false? (tick the true sentences)</p>
+    <p>4. True or false? (tick the true sentences)</p>
     <p><input type="checkbox" id="tf1"></input>  If you see several mostly blue sets in a row, the next set is probably mostly yellow.</p>
     <p id="tfa1"> </p>
     <p><input type="checkbox" id="tf2"></input>  For each set of dots, you will either see the dots yourself or you will see what other people decided, never both.</p>
@@ -38,17 +40,23 @@
         function checkAnswers() {
             // var psiTurk = new PsiTurk(uniqueId, adServerLoc, mode);
             all_right = true;
-            if (document.getElementById("q2").value != 50) {
+            if (document.getElementById("q1").value != 50) {
                 all_right = false;
                 $("#a1").html("<font color='red'>    Wrong - choosing to see the dots reduces your bonus by 50%.</font>");
             } else {
                 $("#a1").html("");
             }
-            if (document.getElementById("q3").value != 18) {
+            if (document.getElementById("q2").value != "0") {
                 all_right = false;
-                $("#a2").html("<font color='red'>    Wrong - each set of dots change every 10 batches, so a set that changed after batch 8 would change next after batch 18.</font>");
+                $("#a2").html("<font color='red'>    Wrong - guessing blindly will probably earn you 0 bonus.</font>");
             } else {
                 $("#a2").html("");
+            }
+            if (document.getElementById("q3").value != 18) {
+                all_right = false;
+                $("#a3").html("<font color='red'>    Wrong - each set of dots change every 10 batches, so a set that changed after batch 8 would change next after batch 18.</font>");
+            } else {
+                $("#a3").html("");
             }
             if (document.getElementById("tf1").checked == true) {
                 all_right = false;
