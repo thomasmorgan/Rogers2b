@@ -364,6 +364,7 @@ var StroopExperiment = function() {
     reportBlue = function () {
         document.getElementById("see_dots_div").style.visibility = "hidden";
         if(lock === false) {
+            lock = true;
             $("#more-blue").addClass('disabled');
             $("#more-blue").html('Sending...');
             $("#reproduction").val("");
@@ -385,13 +386,13 @@ var StroopExperiment = function() {
                     createAgent();
                 }
             });
-            lock = true;
         }
     };
 
     reportYellow = function () {
         document.getElementById("see_dots_div").style.visibility = "hidden";
         if(lock === false) {
+            lock = true;
             $("#more-yellow").addClass('disabled');
             $("#more-yellow").html('Sending...');
             $("#reproduction").val("");
@@ -413,7 +414,6 @@ var StroopExperiment = function() {
                     createAgent();
                 }
             });
-            lock = true;
         }
     };
 
