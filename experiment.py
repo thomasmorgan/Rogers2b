@@ -181,7 +181,7 @@ class RogersExperiment2b(Experiment):
                 scores.append(node.score)
             else:
                 if node.saw_the_dots == 1:
-                    scores.append(float(node.score)*0.75)
+                    scores.append(float(node.score)*0.85)
                 else:
                     scores.append(node.score)
         average = float(sum(scores))/float(len(scores))

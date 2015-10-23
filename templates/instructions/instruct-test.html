@@ -40,9 +40,9 @@
         function checkAnswers() {
             // var psiTurk = new PsiTurk(uniqueId, adServerLoc, mode);
             all_right = true;
-            if (document.getElementById("q1").value != 50) {
+            if (document.getElementById("q1").value != 30) {
                 all_right = false;
-                $("#a1").html("<font color='red'>    Wrong - choosing to see the dots reduces your bonus by 50%.</font>");
+                $("#a1").html("<font color='red'>    Wrong - choosing to see the dots reduces your bonus from that round by 30%.</font>");
             } else {
                 $("#a1").html("");
             }
