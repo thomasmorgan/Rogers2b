@@ -60,49 +60,49 @@
             }
             if (document.getElementById("tf1").checked == true) {
                 all_right = false;
-                $("#tfa1").html("<font color='red'>    Wrong - each set of dots is independent, even if you see several that are mostly blue, it is still random whether the next one is mostly blue or mostly yellow.</font>");
+                $("#tfa1").html("<font color='red'>    False - each set of dots is independent, even if you see several that are mostly blue, it is still random whether the next one is mostly blue or mostly yellow.</font>");
             } else {
                 $("#tfa1").html("");
             }
             if (document.getElementById("tf2").checked == true) {
                 all_right = false;
-                $("#tfa2").html("<font color='red'>    Wrong - if you see what other people decided you can choose to see the dots as well.</font>");
+                $("#tfa2").html("<font color='red'>    False - if you see what other people decided you can choose to see the dots as well.</font>");
             } else {
                 $("#tfa2").html("");
             }
             if (document.getElementById("tf3").checked == false) {
                 all_right = false;
-                $("#tfa3").html("<font color='red'>    Wrong - even if you see what other people thought, you can choose to see the dots too.</font>");
+                $("#tfa3").html("<font color='red'>    True - even if you see what other people thought, you can choose to see the dots too.</font>");
             } else {
                 $("#tfa3").html("");
             }
             if (document.getElementById("tf4").checked == true) {
                 all_right = false;
-                $("#tfa4").html("<font color='red'>    Wrong - the dots only change between batches of participants, they won't change while you are playing.</font>");
+                $("#tfa4").html("<font color='red'>    False - the dots only change between batches of participants, they won't change while you are playing.</font>");
             } else {
                 $("#tfa4").html("");
             }
             if (document.getElementById("tf5").checked == true) {
                 all_right = false;
-                $("#tfa5").html("<font color='red'>    Wrong - other people might not have seen the dots themselves, they might have seen what others before them decided instead.</font>");
+                $("#tfa5").html("<font color='red'>    False - other people might not have seen the dots themselves, they might have seen what others before them decided instead.</font>");
             } else {
                 $("#tfa5").html("");
             }
             if (document.getElementById("tf6").checked == true) {
                 all_right = false;
-                $("#tfa6").html("<font color='red'>    Wrong - the dots change every 10 batches, so they might have changed since three batches ago, but they might not.</font>");
+                $("#tfa6").html("<font color='red'>    False - the dots change every 10 batches, so they might have changed since three batches ago, but they might not.</font>");
             } else {
                 $("#tfa6").html("");
             }
             if (document.getElementById("tf7").checked == false) {
                 all_right = false;
-                $("#tfa7").html("<font color='red'>    Wrong - dots change every 10 batches, so they can't change two batches in a row.</font>");
+                $("#tfa7").html("<font color='red'>    True - dots change every 10 batches, so they can't change two batches in a row.</font>");
             } else {
                 $("#tfa7").html("");
             }
             if (document.getElementById("tf8").checked == false) {
                 all_right = false;
-                $("#tfa8").html("<font color='red'>    Wrong - always choosing to see the dots only reduces your potential bonus by 50%.</font>");
+                $("#tfa8").html("<font color='red'>    True - even if you always pay to see the dots you can still receive 70% of the maximum bonus possible.</font>");
             } else {
                 $("#tfa8").html("");
             }
