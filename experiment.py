@@ -101,7 +101,7 @@ class RogersExperiment2b(Experiment):
         else:
             raise ValueError("{} has invalid learning gene value of {}".format(node, gene))
 
-    def info_post_request(self, participant_id, node, info):
+    def info_post_request(self, node, info):
         node.calculate_fitness()
 
         ts = Transmission.query.filter_by(destination_id=node.id, status="received").with_entities(Transmission.info_id).all()

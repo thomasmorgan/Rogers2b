@@ -83,9 +83,8 @@ var StroopExperiment = function() {
         ensureSameWorker();
 
         reqwest({
-            url: "/node",
+            url: "/node/" + uniqueId,
             method: 'post',
-            data: { participant_id: uniqueId },
             type: 'json',
             success: function (resp) {
                 my_node_id = resp.node.id;
@@ -106,11 +105,9 @@ var StroopExperiment = function() {
     // Get all the infos
     get_gene = function(my_node_id) {
         reqwest({
-            url: "/info",
+            url: "/node/" + my_node_id + "/infos",
             method: 'get',
-            data: { participant_id: uniqueId,
-                    node_id: my_node_id,
-                    info_type: "LearningGene" },
+            data: { info_type: "LearningGene" },
             type: 'json',
             success: function (resp) {
                 learning_strategy = resp.infos[0].contents;
@@ -126,11 +123,9 @@ var StroopExperiment = function() {
 
     get_pending_transmissions = function(my_node_id) {
         reqwest({
-            url: "/transmission",
+            url: "/node/" + my_node_id + "/transmissions",
             method: 'get',
-            data: { participant_id: uniqueId,
-                    node_id: my_node_id,
-                    direction: "incoming",
+            data: { direction: "incoming",
                     status: "pending" },
             type: 'json',
             success: function (resp) {
@@ -151,11 +146,8 @@ var StroopExperiment = function() {
 
     get_first_info = function(info_id) {
         reqwest({
-            url: "/info",
+            url: "/info/" + my_node_id + "/" + info_id,
             method: 'get',
-            data: { participant_id: uniqueId,
-                    node_id: my_node_id,
-                    info_id: info_id },
             type: 'json',
             success: function (resp) {
                 if (resp.info.type == "state") {
@@ -179,11 +171,8 @@ var StroopExperiment = function() {
 
     get_second_info = function(info_id) {
         reqwest({
-            url: "/info",
+            url: "/info/" + my_node_id + "/" + info_id,
             method: 'get',
-            data: { participant_id: uniqueId,
-                    node_id: my_node_id,
-                    info_id: info_id },
             type: 'json',
             success: function (resp) {
                 if (resp.info.type == "state") {
@@ -371,11 +360,9 @@ var StroopExperiment = function() {
             $("#stimulus_div").html("");
 
             reqwest({
-                url: "/info",
+                url: "/info/" + my_node_id,
                 method: 'post',
                 data: {
-                    participant_id: uniqueId,
-                    node_id: my_node_id,
                     contents: "blue",
                     info_type: "Meme"
                 },
@@ -399,11 +386,9 @@ var StroopExperiment = function() {
             $("#stimulus_div").html("");
 
             reqwest({
-                url: "/info",
+                url: "/info/" + my_node_id,
                 method: 'post',
                 data: {
-                    participant_id: uniqueId,
-                    node_id: my_node_id,
                     contents: "yellow",
                     info_type: "Meme"
                 },
